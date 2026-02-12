@@ -39,6 +39,14 @@ All private data stays on your device. The server only sees proofs and public in
 
 ## FAQ
 
+### General
+
+**Do I need to be part of a Web of Trust to leave a review?**
+Yes. Every review requires a ZK proof that you belong to a relevant WoT cohort, built from the Nostr social graph. You need a Nostr identity and enough social connections so that the anonymity set meets the minimum threshold (default 50 members). If the cohort is too small, your review will be rejected to protect your privacy — the system won't publish a review if the crowd isn't large enough to hide in.
+
+**What's the minimum needed to submit a review?**
+You need all of the following: (1) a Nostr identity, (2) enough social connections that your cohort has at least 50 members, (3) an actual visit to the business to get an interaction receipt, (4) your visit falls within an active time window, (5) you haven't already reviewed that business this period, and (6) the business has enough total reviews in the window (at least 20) for batch release. If any of these aren't met, the review is either rejected or held.
+
 ### For Reviewers
 
 **How is my identity protected?**
@@ -97,6 +105,80 @@ No. That's the point. The reviewer is cryptographically anonymous — you can ve
 
 **How do I know the reviewer actually visited?**
 Your location issues blind-signed interaction receipts. The receipt proves a visit happened without revealing which visitor left which review.
+
+## Key Concepts (ELI5)
+
+**What is a "cohort"?**
+The group of people in your corner of the social network. When you leave a review, you prove you're *someone* in this group without saying who. The bigger the group, the harder it is to figure out which one you are.
+
+**What is a "Web of Trust"?**
+It's your social network on Nostr, built from who follows whom. Arrival uses these connections to figure out how close a reviewer is to you socially.
+
+**Who has to follow whom?**
+Nobody has to follow the business. What matters is that you (the reviewer) are connected in the Nostr social graph to the people who will read the review. If a reader follows your friend, and your friend follows you, you're two hops away (d<=2) from that reader.
+
+**Why does the group need to be at least 50 people?**
+If only 3 people visited a restaurant last month, and an anonymous review appears, the owner can guess pretty easily who wrote it. The 50-person minimum (k_min) makes sure the crowd is big enough for real anonymity.
+
+**What's a "nullifier"?**
+A unique one-time token that proves "I already reviewed this place this period" without revealing who you are. It prevents double-reviewing while keeping you anonymous.
+
+**What's a "blind signature"?**
+When you visit a business, your app gets a digital stamp proving you were there — but the business can't connect that stamp to you later. It's like getting a hand stamp at a club while wearing a disguise.
+
+**What does "zero-knowledge proof" mean?**
+A way to prove a fact (like "I'm in this group" or "I visited this place") without revealing any details about yourself. The math checks out, but no private information is shared.
+
+**What does "local proving" mean?**
+All the cryptographic math runs on your own phone or laptop. Your private data never gets sent to a server. This is the default because it's the most private option.
+
+**Why can't I see my review right away?**
+If your review appeared the second you submitted it, someone could match the timing to figure out who you are. Instead, reviews are collected and released all at once in a batch, in random order.
+
+**What's an "epoch" or "time window"?**
+A review period for a specific business. Depending on how busy the business is, this could be a week, two weeks, a month, or a quarter. You get one review per business per window.
+
+## Terms of Use
+
+By using Arrival, you agree to the following terms. These exist to set clear expectations about what the system does, what it doesn't do, and what you're responsible for.
+
+### What Arrival provides
+
+1. **Cryptographic anonymity for reviewers.** Your persistent identity is never linked to your reviews through the protocol. Reviews are submitted with one-time keys and verified via zero-knowledge proofs.
+2. **Proof-of-interaction verification.** Reviews are only admitted if backed by a valid blind-signed interaction receipt from the business.
+3. **Web of Trust filtering.** Readers can filter reviews by social graph distance using Nostr follow data.
+4. **Batch release.** Reviews are held and released in batches with randomized ordering to reduce timing-based deanonymization.
+
+### What Arrival does NOT guarantee
+
+1. **Absolute anonymity.** Arrival provides strong cryptographic anonymity, but no system can protect against all possible attacks. Side-channel risks include device compromise, network metadata leakage, and small anonymity sets (though k_min enforcement mitigates the last one). You are responsible for your own operational security.
+2. **Review accuracy.** Arrival verifies that a reviewer is a real person who visited the business. It does not verify that the content of the review is truthful, fair, or complete.
+3. **Permanent availability.** The service may experience downtime, and time windows or batch release schedules may change based on operational needs.
+4. **Legal protection.** Anonymity is a technical property, not a legal shield. You are responsible for ensuring your reviews comply with applicable laws in your jurisdiction, including defamation and consumer protection laws.
+
+### Your responsibilities
+
+1. **Safeguard your identity key.** Your Nostr identity and derived secrets are your responsibility. If your device is compromised, your anonymity may be compromised. Arrival cannot recover lost keys.
+2. **Honest reviews only.** The system is designed to enable honest reviews without fear of retaliation. Do not abuse it to post fraudulent, harassing, or deliberately misleading content.
+3. **One review per window.** The nullifier system enforces one review per business per time period. Attempting to circumvent this (e.g., by creating multiple identities) undermines the trust model for everyone.
+4. **Understand the trust model.** In local proving mode, you trust the open-source client code, the ZK circuit correctness, and the Semaphore v4 trusted setup. In remote proving mode, you additionally trust the remote prover operator. Read the [trust model documentation](mvp/06-trust-model-and-risk-mitigation.md) to understand what you're relying on.
+
+### For businesses
+
+1. **You cannot identify reviewers.** This is by design. Blind-signed receipts confirm a visit occurred but do not reveal which visitor left which review.
+2. **You cannot suppress reviews.** Once a review passes the verification pipeline and is batch-released, it is published. There is no mechanism for businesses to remove or flag verified reviews.
+3. **Receipt issuance is your responsibility.** Your interaction receipt system must be properly secured. Compromised signing keys can lead to fraudulent receipts for the affected time period (mitigated by keyset rotation).
+
+### Data and privacy
+
+1. **Private data stays local.** In default (local proving) mode, your identity secret, Merkle path, and interaction timestamps never leave your device.
+2. **The server sees proofs only.** The Arrival server stores cryptographic proofs, nullifiers, and public inputs. It does not store or have access to your identity, your social connections, or your exact visit timestamps.
+3. **No exact timestamps are exposed.** The `created_at` field is internal-only and never included in any API response. The only public timing signal is the `time_window_id`.
+4. **Minimized logging.** Arrival follows a privacy-minimized logging policy. Operational logs do not contain identity-linked data.
+
+### Changes to terms
+
+These terms may be updated as the protocol evolves. Significant changes to the trust model, anonymity guarantees, or data handling will be communicated through the project's public channels and release notes.
 
 ## Documentation
 
