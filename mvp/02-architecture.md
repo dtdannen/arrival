@@ -116,6 +116,7 @@ Steps are ordered cheapest-first. Each step maps to exactly one reject code (see
    - `status`: `admitted` (held, not visible) or `published` (batch-released, visible in feed)
    - `distance_bucket` is derived at admission from the root used in the membership proof
    - `time_window_id` links the review to its batch release window
+   - `created_at` is **internal only** — stored for operational use, never exposed in API responses (see `09-event-and-api-spec.md` Timestamp Exposure Policy)
 3. `nullifiers` table
    - `subject_id`, `epoch_id`, `nullifier_hash`, `first_seen_at`
 4. `receipts` table (optional cache)

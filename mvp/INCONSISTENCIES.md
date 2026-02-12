@@ -320,15 +320,21 @@ Nostr contact lists are replaceable events; the latest valid event for an author
 - `04-implementation-plan.md` Step 1: expanded from 3 tasks to 6, covering Nostr ingestion pipeline, signature validation, conflict resolution, relay aggregation, `graph_snapshot_hash` computation, and cohort selection. Exit criteria expanded to cover deterministic rebuilds, replace semantics, and event validation.
 - Spec files updated: `02-architecture.md`, `04-implementation-plan.md`.
 
-### 14. Timestamp Privacy Goal Conflicts With Exact Submission Timestamp Field
+### 14. ~~Timestamp Privacy Goal Conflicts With Exact Submission Timestamp Field~~ RESOLVED
 
 The spec emphasizes time privacy ("windowed, not exact"), but `09-event-and-api-spec.md` includes exact `created_at` in submission events.
 
 Even if interaction timestamps are protected in proofs, exact submission and publication timestamps can still support correlation attacks (for example, tying user network activity to review appearance).
 
-**Resolution needed**: Define timestamp exposure policy end-to-end: what is rounded or bucketed, what is never exposed externally, and whether API responses return coarse publish buckets instead of exact times.
-
 **Affected files**: `09-event-and-api-spec.md`, `02-architecture.md`, `06-trust-model-and-risk-mitigation.md`
+
+**Resolution**:
+- **Decision**: Option A + C — `created_at` is internal-only (never in API responses), `time_window_id` is the only public timing signal, batch release with randomized ordering provides additional linkage resistance.
+- `09-event-and-api-spec.md`: strengthened `created_at` annotation to "internal only." Added explicit per-review fields to feed endpoint excluding `created_at`. Added "Timestamp Exposure Policy" section defining internal-only fields, public timing signals, and mitigations. Verification endpoint also excludes exact timestamps.
+- `02-architecture.md`: added `created_at` internal-only annotation to reviews table in storage model.
+- `06-trust-model-and-risk-mitigation.md`: expanded residual risk #2 (timing/network metadata leakage) with specific mitigations and cross-reference to timestamp exposure policy.
+- `11-time-window-policy.md`: no changes needed — batch release rule 5 already correct as canonical owner.
+- Spec files updated: `09-event-and-api-spec.md`, `02-architecture.md`, `06-trust-model-and-risk-mitigation.md`.
 
 ## Solution Options by Issue
 
@@ -393,19 +399,9 @@ Even if interaction timestamps are protected in proofs, exact submission and pub
 
 **Decision**: Option A — deterministic reducer with signature validation, replaceable-kind semantics, lexicographic tie-break, union-then-replace relay strategy, and `graph_snapshot_hash` per cohort root. See `02-architecture.md` "Nostr Ingestion Rules."
 
-### 14. Timestamp Privacy Goal Conflicts With Exact Submission Timestamp Field
+### 14. ~~Timestamp Privacy Goal Conflicts With Exact Submission Timestamp Field~~ RESOLVED
 
-Option A:
-Keep exact `submitted_at` internal only and expose public `publish_bucket` timestamps.
-
-Option B:
-Expose exact timestamps publicly and rely only on delayed publishing.
-
-Option C:
-Expose coarse timestamps with randomized jittered publication schedule.
-
-Recommended:
-Option A plus Option C for stronger linkage resistance.
+**Decision**: Option A + C — `created_at` internal-only, `time_window_id` as only public timing signal, batch release with randomized ordering. See `09-event-and-api-spec.md` "Timestamp Exposure Policy."
 
 ### 15. ~~Admission/Publication Lifecycle Is Contradictory~~ RESOLVED
 

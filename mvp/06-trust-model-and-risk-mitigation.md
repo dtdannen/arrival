@@ -38,7 +38,7 @@ See `12-receipt-spec.md` for the full receipt lifecycle and trust boundaries.
 ## Residual Risks
 
 1. Trusted setup compromise (mitigated by Semaphore v4's multi-participant ceremony; risk is non-zero but accepted)
-2. Timing/network metadata leakage
+2. Timing/network metadata leakage (mitigated by: `created_at` internal-only, batch release with randomized ordering, `time_window_id` as only public timing signal; see `09-event-and-api-spec.md` Timestamp Exposure Policy)
 3. Small anonymity sets in sparse cohorts
 4. WoT graph manipulation or poisoning
 5. Endpoint compromise on user device

@@ -10,7 +10,7 @@
 4. `posting_pubkey` (one-time key)
 5. `signature` (Ed25519 signature by `posting_pubkey` over canonical serialization of all other body fields)
 6. `proof_bundle` (object)
-7. `created_at` (unix ts; internal ingestion timestamp, not a public timing signal)
+7. `created_at` (unix ts; **internal only** — stored for operational use, never exposed in any API response)
 8. `proof_version` (string)
 
 `proof_version` is intentionally top-level (not nested inside `proof_bundle`) so the gateway can version-gate before interpreting bundle internals.
@@ -83,13 +83,30 @@ Filters:
 Returns:
 
 1. published reviews only (status = `published`; admitted-but-held reviews are not visible)
-2. verification badges
+2. Per-review fields: `review_id`, `subject_id`, `content`, `time_window_id`, `distance_bucket`, `verification_badges`
+3. **No exact timestamps.** `created_at` is never included. The only timing signal is `time_window_id`, which is shared by all reviews in the batch. See `11-time-window-policy.md` batch release rule 5.
 
 ## `GET /v1/reviews/{review_id}/verification`
 
 Returns:
 
 1. proof metadata and verification status for transparency/debug UX
+2. **No exact timestamps.** Same policy as the feed endpoint — `time_window_id` only.
+
+## Timestamp Exposure Policy
+
+Exact timestamps are a correlation vector. Even with ZK-protected interaction timestamps, exact submission or publication times can link reviewer network activity to review appearance.
+
+**Internal-only fields** (stored, never in API responses):
+- `created_at` (submission ingestion timestamp)
+
+**Public timing signals** (exposed in API responses):
+- `time_window_id` — shared by all reviews in a batch; this is the coarsest timing signal and the only one exposed
+
+**Mitigations**:
+1. Batch release at window close with randomized ordering (see `11-time-window-policy.md`)
+2. No per-review publication timestamp — all reviews in a batch appear simultaneously
+3. `created_at` is never returned by any endpoint, including verification/debug endpoints
 
 ## Reject Code Canon
 
