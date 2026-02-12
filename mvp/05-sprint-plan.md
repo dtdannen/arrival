@@ -18,20 +18,24 @@ Outputs:
 Goals:
 
 1. Ship WoT cohort + root publication
-2. Ship receipt verifier
+2. Ship full interaction receipt pipeline (issuance + verification)
 3. Ship nullifier store skeleton
 
 Outputs:
 
 1. `wot-indexer` and root API
-2. `receipt-verifier` API
-3. context-scoped nullifier persistence
+2. `receipt-issuer` blind signing endpoint with keyset management
+3. accepted issuer registry
+4. `receipt-verifier` API with spent-receipt tracking
+5. context-scoped nullifier persistence
 
 Demo:
 
 1. Generate subject root
-2. Verify sample receipts
-3. Simulate nullifier insertion and duplicate detection
+2. Issue a blind-signed receipt end-to-end (blind, sign, unblind)
+3. Verify receipt against issuer registry and keyset
+4. Reject spent receipt (duplicate `receipt_hash`)
+5. Simulate nullifier insertion and duplicate detection
 
 ## Sprint 2 (Week 2): Proof Path and Admission
 

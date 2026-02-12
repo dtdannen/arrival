@@ -122,6 +122,21 @@ But `03-proof-spec.md` public inputs only listed `time_window_id`, and `09-event
 
 **Affected files**: `03-proof-spec.md`, `09-event-and-api-spec.md`
 
+### 20. ~~Receipt Issuance Pipeline Missing From Execution Docs~~ RESOLVED
+
+`04-implementation-plan.md` Step 2 and `05-sprint-plan.md` Sprint 1 plan a `receipt-verifier` but not receipt issuance infrastructure. However, `02-architecture.md` lists `receipt-issuer / receipt-verifier` as a component pair, and `12-receipt-spec.md` defines a full issuance flow requiring an issuer endpoint, keyset management, issuer registry, and spent-receipt tracking.
+
+Without the issuer side built, no receipts can be produced for reviewers. The proof engine (Step 3) requires receipts as input, making this a blocker on the end-to-end flow.
+
+**Affected files**: `04-implementation-plan.md`, `05-sprint-plan.md`, `README.md`
+
+**Resolution**:
+- **Decision**: Add the full receipt issuance pipeline as explicit deliverables alongside the existing receipt verifier.
+- `04-implementation-plan.md` Step 2: expanded from 3 tasks / 2 deliverables to 6 tasks / 6 deliverables covering issuer endpoint, keyset management, issuer registry, verifier, spent-receipts store, and replay protections. Exit criteria expanded to cover end-to-end receipt flow, keyset rotation, subject binding, and spent-receipt rejection.
+- `05-sprint-plan.md` Sprint 1: expanded goals, outputs, and demo to include receipt issuance (blind signing endpoint, keyset management, issuer registry) alongside verification. Demo now covers full blind-sign-unblind-verify flow and spent-receipt rejection.
+- `README.md` Build Sequence: added step 3 ("Implement interaction receipt pipeline") as an explicit step before proof generation.
+- Spec files updated: `04-implementation-plan.md`, `05-sprint-plan.md`, `README.md`.
+
 ## High
 
 ### 5. ~~Cashu Interaction Receipt Issuance Flow Is Undefined~~ RESOLVED
@@ -416,3 +431,7 @@ Option A plus Option C for stronger linkage resistance.
 ### 19. ~~Cohort-Root Endpoint Contract Out of Sync With Time-Window Policy~~ RESOLVED
 
 **Decision**: Option A — single canonical endpoint in `09-event-and-api-spec.md` with all fields needed for proof construction. `11-time-window-policy.md` references the canonical spec.
+
+### 20. ~~Receipt Issuance Pipeline Missing From Execution Docs~~ RESOLVED
+
+**Decision**: Add full receipt issuance pipeline (issuer endpoint, keyset management, issuer registry, spent-receipts store) as explicit deliverables in `04-implementation-plan.md` and `05-sprint-plan.md`. Added receipt pipeline step to `README.md` Build Sequence.

@@ -90,10 +90,11 @@ The objectives above are the product goals — what we are building and why. Des
 
 1. Freeze proof stack and verification policy.
 2. Implement WoT cohorting and root publication.
-3. Implement proof generation and verification pipeline.
-4. Add review gateway admission checks.
-5. Ship minimal UI for proof-verified review browsing.
-6. Run adversarial and privacy-focused test suite.
+3. Implement interaction receipt pipeline (issuance, keyset management, verification, spent-receipt tracking).
+4. Implement proof generation and verification pipeline.
+5. Add review gateway admission checks.
+6. Ship minimal UI for proof-verified review browsing.
+7. Run adversarial and privacy-focused test suite.
 
 ## Delivery Target
 

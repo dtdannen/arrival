@@ -36,19 +36,29 @@ Exit criteria:
 
 Tasks:
 
-1. Define accepted receipt issuers/keys
-2. Implement receipt parser + verifier
-3. Add replay and malformed-input protections
+1. Implement receipt issuer endpoint (blind signing API: receives blinded value `B`, returns `S_blind`)
+2. Implement per-subject keyset management with temporal rotation
+3. Implement accepted issuer registry (`keyset_id → subject_id, keyset_start, keyset_end, public_key`)
+4. Implement receipt verifier (signature verification, keyset lookup, temporal validation)
+5. Implement spent-receipts table and one-receipt-one-review enforcement (`receipt_hash = Hash(r)`)
+6. Add replay and malformed-input protections
 
 Deliverables:
 
-1. `receipt-verifier` module
-2. receipt verification API
+1. `receipt-issuer` service with blind signing endpoint
+2. keyset management and rotation tooling
+3. accepted issuer registry
+4. `receipt-verifier` module
+5. spent-receipts store
+6. receipt issuance and verification APIs
 
 Exit criteria:
 
-1. Valid receipts pass
-2. malformed/forged receipts fail
+1. End-to-end receipt flow works: blind, sign, unblind, verify
+2. Keyset rotation produces new keys on schedule without breaking existing receipts
+3. Receipts for wrong `subject_id` are rejected
+4. Spent receipts (duplicate `receipt_hash`) are rejected
+5. Malformed/forged receipts fail
 
 ## Step 3: Proof Generation Client
 
