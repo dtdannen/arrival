@@ -44,10 +44,11 @@
 
 Returns:
 
-1. active root hash
-2. cohort size
-3. validity window
-4. proof policy metadata (`k_min`, allowed windows)
+1. `distance_roots` — array of `{ distance_bucket, root_hash, k_size }` for each tier (`d<=1`, `d<=2`, `d<=3`)
+2. validity window
+3. proof policy metadata (`k_min`, allowed windows)
+
+The client selects the closest (smallest) distance tier where `k_size >= k_min`. If no tier meets `k_min`, the review cannot be submitted.
 
 ## `POST /v1/reviews/submit`
 
@@ -64,7 +65,7 @@ Output:
 Filters:
 
 1. `verified_only=true|false`
-2. `max_distance=1|2|3`
+2. `max_distance=1|2|3` — filters on the `distance_bucket` stored at admission time, not computed per reader
 3. `time_window_id`
 
 Returns:

@@ -9,8 +9,8 @@
    - ingests follow graph data
    - computes subject-relevant cohorts
 3. `cohort-root-publisher`
-   - builds cohort Merkle trees
-   - publishes roots and metadata
+   - builds cohort Merkle trees per distance tier (`d<=1`, `d<=2`, `d<=3`) for each subject
+   - publishes roots and metadata including distance bucket and cohort size per tier
 4. `receipt-issuer` / `receipt-verifier`
    - issues or validates interaction proofs (Cashu/blind-signature based)
 5. `proof-engine`
@@ -65,9 +65,11 @@
 ## Storage Model (MVP)
 
 1. `roots` table
-   - `root_id`, `subject_id`, `root_hash`, `k_size`, `valid_from`, `valid_to`
+   - `root_id`, `subject_id`, `root_hash`, `k_size`, `distance_bucket`, `valid_from`, `valid_to`
+   - one row per `(subject_id, distance_bucket)` per validity period
 2. `reviews` table
-   - `review_id`, `subject_id`, `epoch_id`, `content_ref`, `proof_ref`, `created_at`
+   - `review_id`, `subject_id`, `epoch_id`, `content_ref`, `proof_ref`, `distance_bucket`, `created_at`
+   - `distance_bucket` is derived at admission from the root used in the membership proof
 3. `nullifiers` table
    - `subject_id`, `epoch_id`, `nullifier_hash`, `first_seen_at`
 4. `receipts` table (optional cache)

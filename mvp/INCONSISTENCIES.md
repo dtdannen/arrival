@@ -11,7 +11,7 @@ This document focuses on **cryptographic/protocol correctness, stack fit, and cr
 - **Issue numbers are stable IDs, not sequence positions.** Numbers may appear out of order within severity sections because new issues are appended. Never renumber — other docs and conversations may reference these IDs.
 - **Each issue has two sections**: a full description (in the severity-grouped section above) and a solution options summary (in "Solution Options by Issue" below). For resolved issues, the description section carries the full resolution narrative; the solution options section carries the concise decision record.
 - **Severity tiers** (Critical / High / Medium) reflect protocol impact, not implementation effort.
-- **Design principles and architectural commitments apply to all decisions.** See `README.md` "Design Principles" and "Architectural Commitments" sections. Key rules: privacy wins over computation; never trust the client for security-critical values; remove features rather than compromise guarantees; prefer decentralization; interaction proof mechanism is open (not locked to Cashu); one canonical spec per domain.
+- **Design principles and architectural commitments apply to all decisions, but objectives take priority.** See `README.md` "Decision Hierarchy", "Design Principles", and "Architectural Commitments" sections. When a design principle appears to conflict with a core objective, find a design that satisfies both — don't use a principle to remove a feature that serves a core goal. Key rules: privacy wins over computation; never trust the client for security-critical values; prefer decentralization; interaction proof mechanism is open (not locked to Cashu); one canonical spec per domain.
 
 ## Critical
 
@@ -42,7 +42,7 @@ The spec references `semaphore/nullreview` and `timeblind` as if they're establi
 - **Cascade**: This also resolves Issue 6 (trusted setup). Since we use Semaphore's circuits unmodified, we reuse Semaphore v4's existing Groth16 ceremony (400+ participants). No custom ceremony needed.
 - Spec files updated: `03-proof-spec.md`, `06-trust-model-and-risk-mitigation.md`.
 
-### 3. `max_distance` Filter Is Architecturally Impossible With Anonymous Reviews
+### 3. ~~`max_distance` Filter Is Architecturally Impossible With Anonymous Reviews~~ RESOLVED
 
 `09-event-and-api-spec.md` lists `max_distance=1|2|3` as a filter on `GET /v1/subjects/{subject_id}/reviews`. This implies the reader's WoT distance to each reviewer is computed at query time. But:
 
@@ -52,7 +52,15 @@ The spec references `semaphore/nullreview` and `timeblind` as if they're establi
 
 This filter as described **cannot work** without either deanonymization or additional proof infrastructure not specified anywhere. The WoT membership proof only proves the reviewer is *in* the cohort, not *how far* they are from any particular reader.
 
-**Resolution needed**: Either remove `max_distance` filtering, or design a mechanism where WoT distance is provably attached to reviews without revealing reviewer identity (e.g., proving distance bucket in ZK at submission time).
+**Resolution**:
+- **Decision**: Option B — precompute distance-bucketed cohort roots and prove membership in a specific tier at submission time.
+- `cohort-root-publisher` builds three Merkle trees per subject: `d<=1`, `d<=2`, `d<=3`. Each has its own root hash and `k_size`.
+- The cohort-root endpoint returns all tiers. The client selects the closest (smallest) tier where `k_size >= k_min`.
+- The reviewer proves membership against that tier's root. The `cohort_root_hash` in the proof bundle implicitly identifies the distance tier.
+- At admission, the gateway derives `distance_bucket` from the root's metadata and stores it on the review.
+- The `max_distance` filter on `GET /v1/subjects/{subject_id}/reviews` filters on this stored `distance_bucket` — no per-reader computation, no anonymity break.
+- `k_min` applies per tier: if `d<=1` has too few members, the reviewer falls back to `d<=2` or `d<=3`. This is visible to the reviewer via the cohort-root endpoint before submission.
+- Spec files updated: `02-architecture.md` (cohort-root-publisher, storage model), `09-event-and-api-spec.md` (cohort-root endpoint, filter semantics).
 
 **Affected files**: `09-event-and-api-spec.md`, `02-architecture.md`
 
@@ -287,19 +295,9 @@ Even if interaction timestamps are protected in proofs, exact submission and pub
 - Verifier recomputes `scope` from known public values
 - Reuses Semaphore v4's existing trusted setup ceremony
 
-### 3. `max_distance` Filter Is Architecturally Impossible With Anonymous Reviews
+### 3. ~~`max_distance` Filter Is Architecturally Impossible With Anonymous Reviews~~ RESOLVED
 
-Option A:
-Remove `max_distance` from MVP API.
-
-Option B:
-Precompute multiple cohort roots by distance bucket (`d<=1`, `d<=2`, `d<=3`) and prove membership in one chosen bucket at submission time.
-
-Option C:
-Add reader-specific distance proofs (complex and not MVP-friendly).
-
-Recommended:
-Option A immediately, Option B only if distance filtering remains product-critical.
+**Decision**: Option B — distance-bucketed cohort roots with membership proof at submission time. Distance bucket stored on review at admission; `max_distance` filter queries stored metadata. Preserves both anonymity and WoT distance filtering.
 
 ### 4. ~~`cohort_size` Client Trust -- Security Gap~~ RESOLVED
 

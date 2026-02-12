@@ -22,6 +22,10 @@ This is the canonical V4 plan for MVP execution.
 
 Consumer / local-business review app.
 
+## Decision Hierarchy
+
+The objectives above are the product goals — what we are building and why. Design principles and architectural commitments below are the means to achieve those goals. When a design principle appears to conflict with a core objective, find a design that satisfies both. Design principles guide *how* we build, not *whether* we build. A principle should never be used to argue away a core objective.
+
 ## Design Principles
 
 1. **Privacy and anonymity are the priority.** When a design choice is a tradeoff between stronger anonymity and lower computational cost, choose stronger anonymity. Additional computation, storage, or complexity in service of privacy is an acceptable cost. Features that weaken anonymity guarantees — even slightly, even conveniently — are not acceptable.
