@@ -8,7 +8,7 @@ Users trust:
 
 1. Open-source client correctness
 2. Circuit/protocol correctness
-3. Trusted setup integrity (if setup-based proving)
+3. Trusted setup integrity (Semaphore v4's Groth16 ceremony, 400+ participants)
 4. Their own device security
 
 Users do not need to trust a remote prover with witness data.
@@ -25,7 +25,7 @@ Remote proving is therefore a privacy/censorship tradeoff, not a free optimizati
 
 ## Residual Risks
 
-1. Trusted setup compromise (if using setup-based proving)
+1. Trusted setup compromise (mitigated by Semaphore v4's multi-participant ceremony; risk is non-zero but accepted)
 2. Timing/network metadata leakage
 3. Small anonymity sets in sparse cohorts
 4. WoT graph manipulation or poisoning

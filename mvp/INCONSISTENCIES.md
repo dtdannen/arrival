@@ -5,7 +5,7 @@ Focus: cryptographic/protocol correctness, stack fit, and cross-doc consistency.
 
 ## Critical
 
-### 1. "NullReview" and "TimeBlind" Don't Exist as Real Projects
+### 1. ~~"NullReview" and "TimeBlind" Don't Exist as Real Projects~~ RESOLVED
 
 The spec references `semaphore/nullreview` and `timeblind` as if they're established libraries or protocols. Web searches turn up zero results for either.
 
@@ -14,27 +14,23 @@ The spec references `semaphore/nullreview` and `timeblind` as if they're establi
 
 **Affected files**: `README.md`, `02-architecture.md`, `03-proof-spec.md`, `07-risc0-evaluation.md`
 
-### 2. Nullifier Construction Doesn't Match Semaphore v4
+**Resolution**:
+- **NullReview** → use Semaphore v4 (`@semaphore-protocol/*`) directly for membership proofs and nullifiers. "NullReview" was never a real dependency.
+- **TimeBlind** → custom Circom circuit using `circomlib/comparators.circom` `LessEqThan(32)` templates. Two range checks (~68 constraints) proving a private receipt timestamp falls within a public time window. Fully specified in `11-time-window-policy.md`.
+- The time-window design also revealed that **time-window anonymity is independent of `k_min`** (cohort membership anonymity). A new `t_min` threshold, adaptive system-calculated windows, and batch release policy were designed to address this. See `11-time-window-policy.md` for the complete specification.
+- Spec files referencing these names need updating to use real dependency names externally; internal module aliases are acceptable.
 
-`03-proof-spec.md` defines:
-```
-nullifier_hash = H(identity_secret, subject_id, epoch_id, domain_tag)
-```
+### 2. ~~Nullifier Construction Doesn't Match Semaphore v4~~ RESOLVED
 
-Semaphore v4's actual nullifier is:
-```
-nullifier = H(scope, identity_secret)
-```
+`03-proof-spec.md` previously defined a four-input nullifier that didn't match Semaphore v4's two-input construction.
 
-Semaphore v4 takes exactly **two inputs**: a `scope` (public) and the `identity_secret` (private). Our construction uses **four inputs**. This means either:
-
-- We're building a **custom circuit** that extends Semaphore's nullifier (significant work, not acknowledged anywhere)
-- We need to pack `(subject_id, epoch_id, domain_tag)` into a single `scope` value and use Semaphore as-is (should be documented as the approach)
-- We're using Semaphore's identity/membership proof but replacing the nullifier circuit entirely (even more custom work)
-
-**Resolution needed**: Decide which approach and document it. If packing into `scope`, define the packing scheme. If custom circuit, acknowledge the implications for trusted setup (see issue 4).
-
-**Affected files**: `03-proof-spec.md`, `02-architecture.md`
+**Resolution**:
+- **Decision**: Option A — pack application context into Semaphore's `scope` parameter and use the native nullifier directly.
+- **Scope packing**: `scope = Poseidon(domain_tag, subject_id, epoch_id)`. Each component is a BN254 scalar field element.
+- **Nullifier**: `nullifier = Poseidon(identity_secret, scope)` — Semaphore v4's unmodified construction.
+- **Verifier responsibility**: independently compute `scope` from known public values and confirm it matches the proof's public input.
+- **Cascade**: This also resolves Issue 6 (trusted setup). Since we use Semaphore's circuits unmodified, we reuse Semaphore v4's existing Groth16 ceremony (400+ participants). No custom ceremony needed.
+- Spec files updated: `03-proof-spec.md`, `06-trust-model-and-risk-mitigation.md`.
 
 ### 3. `max_distance` Filter Is Architecturally Impossible With Anonymous Reviews
 
@@ -79,18 +75,14 @@ The spec treats Cashu blind signatures as proof-of-interaction receipts, but Cas
 
 **Affected files**: `02-architecture.md`, `03-proof-spec.md`, `06-trust-model-and-risk-mitigation.md`, `08-open-decisions.md`
 
-### 6. Trusted Setup Requirement Not Properly Acknowledged
+### 6. ~~Trusted Setup Requirement Not Properly Acknowledged~~ RESOLVED
 
-`06-trust-model-and-risk-mitigation.md` says "if using setup-based proving" repeatedly, treating the trusted setup as optional. But Semaphore v4 uses **Groth16**, which **requires** a trusted setup. Semaphore completed a ceremony with 400+ participants in July 2024.
+`06-trust-model-and-risk-mitigation.md` previously hedged with "if using setup-based proving," treating the trusted setup as optional.
 
-Two sub-issues:
-
-1. If we use Semaphore's existing circuits and ceremony parameters, say so explicitly and drop the "if" hedging.
-2. If we've modified the circuit (which we have -- see issue 2 re: nullifier construction), we **cannot reuse Semaphore's ceremony**. A new trusted setup is required for any modified circuit. This is a major operational requirement that is currently hand-waved.
-
-**Resolution needed**: Commit to whether we're using unmodified Semaphore circuits (and adapting our nullifier to fit) or building custom circuits (and planning a trusted setup). The trust model document must reflect whichever is chosen.
-
-**Affected files**: `06-trust-model-and-risk-mitigation.md`, `03-proof-spec.md`
+**Resolution**:
+- **Decision**: Option A — use unmodified Semaphore v4 circuits and existing Groth16 ceremony artifacts.
+- This was made possible by resolving Issue 2 with scope packing instead of a custom nullifier circuit. Since we don't modify Semaphore's circuits, we reuse its ceremony directly.
+- `06-trust-model-and-risk-mitigation.md` updated to state the trusted setup dependency explicitly and reference Semaphore v4's 400+ participant ceremony. "If" hedging removed.
 
 ### 7. RISC Zero Remote Proving Section Is Dated
 
@@ -180,31 +172,22 @@ Even if interaction timestamps are protected in proofs, exact submission and pub
 
 ## Solution Options by Issue
 
-### 1. "NullReview" and "TimeBlind" Don't Exist as Real Projects
+### 1. ~~"NullReview" and "TimeBlind" Don't Exist as Real Projects~~ RESOLVED
 
-Option A:
-Replace ambiguous names with real dependencies:
-- membership/nullifier: `@semaphore-protocol/*` (Semaphore v4 primitives)
-- time privacy: custom `time_window` circuit built in Circom
+**Decision**: Option A externally (real dependency names), Option B internally (module aliases).
 
-Option B:
-Keep names as internal module names, but explicitly define them as custom components in the stack and architecture docs.
+- NullReview → `@semaphore-protocol/*` (Semaphore v4)
+- TimeBlind → custom Circom circuit (`LessEqThan(32)` from `circomlib/comparators.circom`)
+- Full time-window policy (adaptive windows, `t_min`, batch release) specified in `11-time-window-policy.md`
 
-Recommended:
-Option A for external naming clarity, plus Option B only as local code/module aliases.
+### 2. ~~Nullifier Construction Doesn't Match Semaphore v4~~ RESOLVED
 
-### 2. Nullifier Construction Doesn't Match Semaphore v4
+**Decision**: Option A — use Semaphore as-is with scope packing.
 
-Option A:
-Use Semaphore as-is and encode scope as:
-`scope = H(domain_tag || subject_id || epoch_id)`.
-Then use Semaphore nullifier directly.
-
-Option B:
-Build a custom nullifier circuit with four inputs and own proving/verifying artifacts.
-
-Recommended:
-Option A to stay aligned with existing Semaphore tooling and trust assumptions.
+- `scope = Poseidon(domain_tag, subject_id, epoch_id)` (all BN254 scalar field elements)
+- `nullifier = Poseidon(identity_secret, scope)` (Semaphore v4 native)
+- Verifier recomputes `scope` from known public values
+- Reuses Semaphore v4's existing trusted setup ceremony
 
 ### 3. `max_distance` Filter Is Architecturally Impossible With Anonymous Reviews
 
@@ -247,19 +230,9 @@ Replace Cashu with direct signed interaction attestations (non-ecash), then prov
 Recommended:
 Option A if anonymity-preserving transferable-token model is desired; Option B if simpler attestation flow is preferred over ecash complexity.
 
-### 6. Trusted Setup Requirement Not Properly Acknowledged
+### 6. ~~Trusted Setup Requirement Not Properly Acknowledged~~ RESOLVED
 
-Option A:
-Use unmodified Semaphore circuits and existing ceremony artifacts.
-
-Option B:
-Use custom circuits and run a new setup ceremony for each proving system/circuit pair.
-
-Option C:
-Move to proving systems with different setup properties (larger stack shift).
-
-Recommended:
-Option A for stack stability; choose Option B only if custom circuit requirements are non-negotiable.
+**Decision**: Option A — use unmodified Semaphore circuits and existing ceremony artifacts. Enabled by resolving Issue 2 with scope packing (no circuit modifications needed).
 
 ### 7. RISC Zero Remote Proving Section Is Dated
 

@@ -19,8 +19,9 @@ Each review submission must satisfy all four statements:
 2. `epoch_id`
 3. `cohort_root_hash`
 4. `time_window_id` (week/month bucket)
-5. `nullifier_hash`
-6. `proof_version`
+5. `scope` (derived: `Poseidon(domain_tag, subject_id, epoch_id)`)
+6. `nullifier_hash`
+7. `proof_version`
 
 ## Private Inputs (Witness)
 
@@ -28,17 +29,36 @@ Each review submission must satisfy all four statements:
 2. Merkle path to cohort root
 3. Receipt secret/token and issuer witness data
 4. Interaction timestamp witness
-5. Secret material used in nullifier derivation
 
 ## Nullifier Construction
 
-`nullifier_hash = H(identity_secret, subject_id, epoch_id, domain_tag)`
+Uses Semaphore v4's native two-input nullifier directly:
+
+```
+nullifier = Poseidon(identity_secret, scope)
+```
+
+Application context is packed into a single `scope` value:
+
+```
+scope = Poseidon(domain_tag, subject_id, epoch_id)
+```
+
+Where:
+
+- `domain_tag`: fixed application constant identifying this protocol (e.g., `Poseidon("arrival-review-v1")`)
+- `subject_id`: the reviewed entity key, encoded as a BN254 scalar field element
+- `epoch_id`: the epoch identifier, derived per `02-architecture.md`
+
+The verifier independently computes `scope` from known public values and confirms it matches the proof's public input before accepting the proof.
+
+This uses Semaphore v4's existing circuit and Groth16 trusted setup ceremony unmodified. No custom nullifier circuit is needed.
 
 Requirements:
 
-1. Deterministic within context
-2. Unlinkable across subjects/epochs
-3. Collision-resistant under chosen hash function
+1. Deterministic within context (guaranteed by Poseidon determinism and fixed input encoding)
+2. Unlinkable across subjects/epochs (different scope per context)
+3. Collision-resistant (inherited from Poseidon over BN254 scalar field)
 
 ## TimeBlind Policy
 
