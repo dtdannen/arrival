@@ -50,6 +50,7 @@ Consumer / local-business review app.
 9. `mvp/08-open-decisions.md`: unresolved decisions to close before build lock
 10. `mvp/09-event-and-api-spec.md`: submission payload and API contract
 11. `mvp/10-test-plan.md`: functional, adversarial, and privacy test coverage
+12. `mvp/11-time-window-policy.md`: time-window proof circuit, adaptive window calculation, `t_min` threshold, and batch release policy
 
 ## Build Sequence
 
