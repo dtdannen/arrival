@@ -22,9 +22,9 @@
 
 1. Proof composition:
    - single combined bundle vs modular verifiers
-2. Prover operation:
-   - local-only at launch
-   - local-first with remote fallback at launch
+2. ~~Prover operation~~ **CLOSED**: local-first with optional remote fallback at launch.
+   - Local proving is the default path.
+   - Remote proving is opt-in fallback only, with explicit trust warning.
 3. Circuit/proof versioning and migration cadence
 
 ## Receipt Decisions

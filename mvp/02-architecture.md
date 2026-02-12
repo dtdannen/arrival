@@ -36,10 +36,12 @@
 
 `epoch_id = hash(subject_id || iso_week)`
 
+`epoch_id` is server-authoritative. The gateway derives `epoch_id` from policy and context, and rejects submissions whose proof public input does not match the derived value.
+
 ## End-to-End Submission Flow
 
 1. User selects subject and writes review text/media.
-2. Client fetches latest cohort root metadata for subject.
+2. Client fetches latest cohort root metadata for subject, including authoritative epoch context.
 3. Client attaches interaction receipt witness.
 4. Client receives system-assigned time window from cohort-root endpoint and constructs time-window witness (see `11-time-window-policy.md`).
 5. Client generates proof bundle:
@@ -47,7 +49,7 @@
    - interaction proof
    - time-window proof
    - scoped nullifier
-6. Client submits review with one-time posting key and proof bundle.
+6. Client submits review with one-time posting key and proof bundle (no top-level client epoch override).
 7. Gateway verifies bundle and checks nullifier uniqueness.
 8. If admitted, review is stored with status `admitted` (held). Nullifier is consumed. Review is not yet visible in the feed.
 9. If rejected, response includes deterministic reject code. Nullifier is not consumed.
@@ -57,13 +59,14 @@
 
 1. Verify `signature` against `posting_pubkey` over canonical body serialization. Reject if invalid.
 2. Validate proof bundle schema and version.
-3. Verify subject root exists and is active.
-4. Verify WoT membership proof against active root.
-5. Verify interaction receipt signature/proof.
-6. Verify time-window proof and policy window limits.
-7. Compute and check nullifier uniqueness in `(subject_id, epoch_id)`.
-8. Enforce `k_min` threshold from root metadata.
-9. Admit or reject.
+3. Derive authoritative `epoch_id` from `subject_id` and epoch policy context; reject if proof public input `epoch_id` mismatches.
+4. Verify subject root exists and is active.
+5. Verify WoT membership proof against active root.
+6. Verify interaction receipt signature/proof.
+7. Verify time-window proof and policy window limits.
+8. Compute and check nullifier uniqueness in `(subject_id, epoch_id)` using the authoritative derived `epoch_id`.
+9. Enforce `k_min` threshold from root metadata; below-threshold submissions are hard-rejected (not deferred).
+10. Admit or reject.
 
 ## Storage Model (MVP)
 

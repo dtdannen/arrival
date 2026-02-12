@@ -40,7 +40,7 @@ For each published review, users can verify:
 
 1. `100%` published reviews pass all required proof checks
 2. `0` accepted duplicate nullifiers per `(subject_id, epoch)`
-3. `100%` reviews below `k_min` blocked or deferred
+3. `100%` reviews below `k_min` rejected before admission
 4. End-to-end review submission median under target SLA (define in implementation)
 5. Successful red-team replay/tamper tests rejected by verifier
 

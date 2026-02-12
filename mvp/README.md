@@ -53,7 +53,8 @@ The objectives above are the product goals — what we are building and why. Des
 2. `k_min` anonymity threshold is mandatory (default 50, configurable).
 3. One-review-per-subject-per-epoch via nullifier.
 4. Persistent identity key is never used directly to sign review posts.
-5. If `k < k_min`, individual review is not published.
+5. If `k < k_min`, submission is rejected (`insufficient_anonymity_set`) and is not admitted, held, or published.
+6. `epoch_id` is server-authoritative: the gateway derives and enforces it, never trusting a top-level client value.
 
 ## Core Stack (MVP)
 

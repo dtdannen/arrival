@@ -202,21 +202,26 @@ Three documents gave contradictory answers about who determines time windows and
 
 ## Medium
 
-### 8. Epoch ID Computation/Verification Gap
+### 8. ~~Epoch ID Computation/Verification Gap~~ RESOLVED
 
 `02-architecture.md` defines:
 ```
 epoch_id = hash(subject_id || iso_week)
 ```
 
-But `09-event-and-api-spec.md` treats `epoch_id` as a simple `string` submitted by the client. If `epoch_id` is deterministically derived, the verifier should **recompute** it from `subject_id` and current time rather than trusting the client's value. A malicious client could submit a forged `epoch_id` to:
+But `09-event-and-api-spec.md` treated `epoch_id` as a simple `string` submitted by the client. If `epoch_id` is deterministically derived, the verifier should **recompute** it from `subject_id` and current time rather than trusting the client's value. A malicious client could submit a forged `epoch_id` to:
 
 - Reuse a nullifier from a different epoch
 - Submit a review against an epoch where the root was different
 
-The spec doesn't say whether the gateway recomputes and compares, or trusts the submitted `epoch_id`.
+The spec didn't say whether the gateway recomputes and compares, or trusts the submitted `epoch_id`.
 
-**Resolution needed**: Specify that the gateway independently computes `epoch_id` and rejects submissions where the client-provided value doesn't match.
+**Resolution**:
+- **Decision**: Option A — `epoch_id` is server-derived only (no top-level client `epoch_id` field).
+- `09-event-and-api-spec.md` now removes top-level `epoch_id` from `review_submission_v1` and adds `invalid_epoch_context` reject code.
+- `09-event-and-api-spec.md` `GET /v1/subjects/{subject_id}/cohort-root` now returns authoritative `epoch_id` as read-only policy context for proof construction.
+- `03-proof-spec.md` admission pseudocode now derives authoritative `epoch_id` server-side and rejects mismatches between derived `epoch_id` and proof public input.
+- `02-architecture.md` now states `epoch_id` is server-authoritative and enforced in the verification pipeline.
 
 **Affected files**: `02-architecture.md`, `09-event-and-api-spec.md`, `03-proof-spec.md`
 
@@ -319,16 +324,9 @@ Even if interaction timestamps are protected in proofs, exact submission and pub
 
 **Decision**: Hybrid of Options A and B — kept the evaluation doc (it's useful context for post-MVP) but updated Bonsai reference to note deprecation and aligned all naming with current stack terminology.
 
-### 8. Epoch ID Computation/Verification Gap
+### 8. ~~Epoch ID Computation/Verification Gap~~ RESOLVED
 
-Option A:
-Make `epoch_id` server-derived only; client omits it.
-
-Option B:
-Client sends `epoch_id` as hint, gateway recomputes and rejects mismatches.
-
-Recommended:
-Option A for minimal ambiguity.
+**Decision**: Option A — `epoch_id` is server-derived only. Removed top-level client `epoch_id`; gateway derives and enforces authoritative epoch context and rejects mismatches with `invalid_epoch_context`.
 
 ### 9. ~~`proof_version` Location Inconsistency~~ RESOLVED
 

@@ -14,10 +14,11 @@
 3. Valid receipt + invalid membership fails
 4. Invalid time-window proof fails
 5. Unsupported proof version fails
+6. Mismatched proof `epoch_id` vs server-derived epoch fails (`invalid_epoch_context`)
 
 ## Policy Enforcement Tests
 
-1. `k_min` threshold rejects undersized cohort
+1. `k_min` threshold hard-rejects undersized cohort (submission is never admitted/held)
 2. Duplicate nullifier rejects second submission
 3. Cross-subject submissions with same user do not collide nullifiers
 4. Epoch rotation allows new submission in new epoch

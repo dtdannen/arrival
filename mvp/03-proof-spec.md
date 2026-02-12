@@ -16,7 +16,7 @@ Each review submission must satisfy all four statements:
 ## Public Inputs
 
 1. `subject_id`
-2. `epoch_id`
+2. `epoch_id` (proof public input; gateway recomputes authoritative epoch and rejects mismatch)
 3. `cohort_root_hash`
 4. `time_window_id` (identifies the window period)
 5. `window_start` (unix timestamp, beginning of window)
@@ -71,19 +71,23 @@ Requirements:
 ## Admission Policy (Pseudocode)
 
 ```text
+if !verify_signature(signature, posting_pubkey, canonical_body): reject("invalid_signature")
 if !validate_schema(bundle): reject("invalid_schema")
 if !supported_proof_version(proof_version): reject("unsupported_proof_version")
+authoritative_epoch_id = derive_epoch_id(subject_id, epoch_policy_context)
+if epoch_id != authoritative_epoch_id: reject("invalid_epoch_context")
 if !root_active(subject_id, cohort_root_hash): reject("inactive_root")
 if server_k_size(cohort_root_hash) < k_min: reject("insufficient_anonymity_set")
 # k_size is always read from the server-side roots table, never from client input
+# below-k_min submissions are hard-rejected and never deferred/held
 if !verify_membership(bundle): reject("invalid_membership_proof")
 if !verify_interaction(bundle): reject("invalid_interaction_proof")
 if !window_bounds_match(time_window_id, window_start, window_end): reject("invalid_timeblind_proof")
 # verifier looks up authoritative window bounds for time_window_id and confirms
 # client-submitted window_start/window_end match exactly
 if !verify_timeblind(bundle): reject("invalid_timeblind_proof")
-if nullifier_exists(subject_id, epoch_id, nullifier_hash): reject("duplicate_nullifier")
-store_nullifier(subject_id, epoch_id, nullifier_hash)
+if nullifier_exists(subject_id, authoritative_epoch_id, nullifier_hash): reject("duplicate_nullifier")
+store_nullifier(subject_id, authoritative_epoch_id, nullifier_hash)
 admit()
 # admit() stores the review with status "admitted" (held).
 # Admission is not publication. Publication happens at batch release
@@ -107,4 +111,5 @@ admit()
 3. Invalid receipt rejected
 4. Invalid time-window rejected
 5. Duplicate nullifier rejected
-6. Below-threshold cohort rejected
+6. Below-threshold cohort hard-rejected (never admitted/held)
+7. Mismatched proof `epoch_id` rejected (`invalid_epoch_context`)
