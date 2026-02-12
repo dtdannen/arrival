@@ -70,6 +70,7 @@ Requirements:
 
 ```text
 if !validate_schema(bundle): reject("invalid_schema")
+if !supported_proof_version(proof_version): reject("unsupported_proof_version")
 if !root_active(subject_id, cohort_root_hash): reject("inactive_root")
 if server_k_size(cohort_root_hash) < k_min: reject("insufficient_anonymity_set")
 # k_size is always read from the server-side roots table, never from client input
@@ -83,9 +84,10 @@ accept()
 
 ## Versioning Rules
 
-1. `proof_version` must be explicit in every submission
-2. Verifier supports a bounded set of active versions
-3. Circuit/proof upgrades require:
+1. `proof_version` is a top-level submission field and must be explicit in every submission
+2. Verifier must validate `proof_version` before unpacking `proof_bundle`
+3. Verifier supports a bounded set of active versions
+4. Circuit/proof upgrades require:
    - new version id
    - migration window
    - published changelog

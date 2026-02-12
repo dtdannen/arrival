@@ -13,6 +13,8 @@
 7. `created_at` (unix ts)
 8. `proof_version` (string)
 
+`proof_version` is intentionally top-level (not nested inside `proof_bundle`) so the gateway can version-gate before interpreting bundle internals.
+
 ## `proof_bundle` fields
 
 1. `cohort_root_hash`
@@ -21,6 +23,8 @@
 4. `timeblind_proof`
 5. `time_window_id`
 6. `nullifier_hash`
+
+`proof_bundle` must not contain `proof_version`; version selection is done at the top-level request schema.
 
 ## Verification Result Object
 

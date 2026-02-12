@@ -208,11 +208,15 @@ The spec doesn't say whether the gateway recomputes and compares, or trusts the 
 
 **Affected files**: `02-architecture.md`, `09-event-and-api-spec.md`, `03-proof-spec.md`
 
-### 9. `proof_version` Location Inconsistency
+### 9. ~~`proof_version` Location Inconsistency~~ RESOLVED
 
 In `09-event-and-api-spec.md`, `proof_version` is a **top-level field** on `review_submission_v1`. But it describes a property of the proof, so it arguably belongs inside `proof_bundle`. This matters for validation ordering: the gateway needs to know the proof version before it can interpret the bundle contents, but schema validation of the top-level event shouldn't depend on proof-specific versioning.
 
-**Resolution needed**: Decide whether `proof_version` is top-level (current) or inside `proof_bundle`, and document the rationale. If top-level, the gateway should validate it before unpacking the bundle.
+**Resolution**:
+- **Decision**: Option A — keep `proof_version` top-level on `review_submission_v1`.
+- **Rationale**: The gateway must gate by version before interpreting `proof_bundle`; top-level placement allows early routing/rejection without bundle-specific parsing logic.
+- **Normative rule**: `proof_bundle` does not include `proof_version`. Verifier checks `proof_version` before bundle unpack/verification and returns `unsupported_proof_version` when unsupported.
+- Spec files updated: `09-event-and-api-spec.md`, `03-proof-spec.md`.
 
 **Affected files**: `09-event-and-api-spec.md`, `03-proof-spec.md`
 
@@ -343,19 +347,9 @@ Client sends `epoch_id` as hint, gateway recomputes and rejects mismatches.
 Recommended:
 Option A for minimal ambiguity.
 
-### 9. `proof_version` Location Inconsistency
+### 9. ~~`proof_version` Location Inconsistency~~ RESOLVED
 
-Option A:
-Keep `proof_version` top-level and require gateway version gate before bundle parsing.
-
-Option B:
-Move `proof_version` inside `proof_bundle`.
-
-Option C:
-Duplicate in both places and require equality.
-
-Recommended:
-Option A for clean request routing and compatibility checks.
+**Decision**: Option A — `proof_version` remains top-level, and the gateway version-gates before parsing `proof_bundle`.
 
 ### 10. Verification Pipeline Step Count Mismatches
 
@@ -476,4 +470,3 @@ Split into two endpoints: cohort-root (membership data) and time-window-policy (
 
 Recommended:
 Option A for MVP simplicity. A single endpoint gives the client everything needed for proof construction in one call.
-
