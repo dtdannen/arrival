@@ -6,8 +6,9 @@
    - manages persistent identity for WoT participation
    - derives one-time review posting keys
 2. `wot-indexer`
-   - ingests follow graph data
+   - ingests Nostr follow graph (kind 3 contact list events)
    - computes subject-relevant cohorts
+   - **Ingestion semantics** (see Nostr Ingestion Rules below)
 3. `cohort-root-publisher`
    - builds cohort Merkle trees per distance tier (`d<=1`, `d<=2`, `d<=3`) for each subject
    - publishes roots and metadata including distance bucket and cohort size per tier
@@ -37,6 +38,39 @@
 `epoch_id = hash(subject_id || iso_week)`
 
 `epoch_id` is server-authoritative. The gateway derives `epoch_id` from policy and context, and rejects submissions whose proof public input does not match the derived value.
+
+## Nostr Ingestion Rules
+
+The `wot-indexer` ingests Nostr kind 3 (contact list) events to build the follow graph. These rules ensure deterministic graph resolution across nodes.
+
+### Event resolution
+
+1. Only kind 3 events are ingested (contact lists)
+2. Kind 3 is a replaceable event kind: for each author (pubkey), only the single latest event is retained
+3. Events must have a valid Schnorr signature over secp256k1. Invalid or malformed events are discarded silently.
+
+### Conflict resolution
+
+1. For multiple kind 3 events from the same author, the event with the highest `created_at` wins
+2. If two events share the same `created_at`, the event with the lexicographically lowest event `id` wins (deterministic tie-break)
+3. An event that arrives later replaces the current retained event only if it wins the comparison above
+
+### Relay strategy
+
+1. The indexer queries a defined relay set (configured per deployment)
+2. Responses from all relays are unioned: all candidate events are collected, then replace semantics are applied
+3. The relay set is published as part of cohort root metadata for auditability
+4. Relay variance (different relays having different events) is resolved by the union-then-replace strategy — the latest valid event wins regardless of which relay provided it
+
+### Graph snapshot determinism
+
+1. After applying all resolution rules, the normalized graph is a map: `author_pubkey → [followed_pubkeys]`
+2. The indexer computes a deterministic `graph_snapshot_hash` over this normalized map (sorted by author pubkey, then sorted follow lists)
+3. The `graph_snapshot_hash` is included in cohort root metadata, allowing any node to verify it built the same graph from the same events
+
+### Refresh cadence
+
+The indexer re-ingests on the root refresh schedule (daily or on significant graph changes, per Operational Defaults). Each refresh produces a new `graph_snapshot_hash`. Cohort roots are only rebuilt if the graph has changed.
 
 ## End-to-End Submission Flow
 
@@ -74,8 +108,9 @@ Steps are ordered cheapest-first. Each step maps to exactly one reject code (see
 ## Storage Model (MVP)
 
 1. `roots` table
-   - `root_id`, `subject_id`, `root_hash`, `k_size`, `distance_bucket`, `valid_from`, `valid_to`
+   - `root_id`, `subject_id`, `root_hash`, `k_size`, `distance_bucket`, `graph_snapshot_hash`, `valid_from`, `valid_to`
    - one row per `(subject_id, distance_bucket)` per validity period
+   - `graph_snapshot_hash` links the root to the specific normalized graph state it was built from
 2. `reviews` table
    - `review_id`, `subject_id`, `epoch_id`, `content_ref`, `proof_ref`, `distance_bucket`, `status`, `time_window_id`, `created_at`
    - `status`: `admitted` (held, not visible) or `published` (batch-released, visible in feed)

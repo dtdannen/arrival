@@ -49,20 +49,25 @@ Exit criteria:
 
 Tasks:
 
-1. Implement graph ingestion from Nostr follow data
-2. Define cohort selection policy by subject
-3. Build Merkle root generation and publication
+1. Implement Nostr kind 3 event ingestion with replaceable event semantics (see `02-architecture.md` Nostr Ingestion Rules)
+2. Implement signature validation, conflict resolution, and deterministic tie-breaking
+3. Implement relay set configuration and union-then-replace aggregation
+4. Compute deterministic `graph_snapshot_hash` over normalized follow graph
+5. Define cohort selection policy by subject
+6. Build Merkle root generation and publication per distance tier
 
 Deliverables:
 
-1. `wot-indexer` service
+1. `wot-indexer` service with Nostr ingestion pipeline
 2. `cohort-root-publisher` service
-3. root metadata API
+3. root metadata API (includes `graph_snapshot_hash` and relay set)
 
 Exit criteria:
 
-1. Deterministic cohort rebuild
-2. root validity intervals enforced
+1. Deterministic cohort rebuild: same events produce identical `graph_snapshot_hash` across runs
+2. Replaceable event semantics: later contact list replaces earlier for same author
+3. Invalid/malformed Nostr events are rejected
+4. Root validity intervals enforced
 
 ## Step 2: Interaction Receipt Pipeline
 

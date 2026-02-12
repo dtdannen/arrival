@@ -306,15 +306,19 @@ The entire spec is technology-agnostic. Semaphore v4 is TypeScript/Circom. Nostr
 - `08-open-decisions.md`: added and closed technology stack decision under Proof/Infra Decisions.
 - Spec files updated: `04-implementation-plan.md`, `08-open-decisions.md`.
 
-### 13. Nostr WoT Ingestion Rules Are Underspecified (Replaceable Event Semantics)
+### 13. ~~Nostr WoT Ingestion Rules Are Underspecified (Replaceable Event Semantics)~~ RESOLVED
 
 `04-implementation-plan.md` says to ingest Nostr follow data, but does not define the event-resolution rules for contact lists.
 
 Nostr contact lists are replaceable events; the latest valid event for an author should replace prior values. If the indexer unions historical lists instead of applying replace semantics, cohort roots become non-deterministic and can diverge across nodes.
 
-**Resolution needed**: Specify Nostr ingestion semantics precisely (replaceability, conflict resolution, relay variance handling) and enforce deterministic root build rules from that normalized graph.
-
 **Affected files**: `04-implementation-plan.md`, `02-architecture.md`
+
+**Resolution**:
+- **Decision**: Option A — specify deterministic reducer with full ingestion semantics.
+- `02-architecture.md`: added "Nostr Ingestion Rules" section covering event resolution (kind 3, replaceable, latest `created_at` per author), conflict resolution (deterministic tie-break on event `id`), relay strategy (defined relay set, union-then-replace), graph snapshot determinism (`graph_snapshot_hash` over normalized map), and refresh cadence. Added `graph_snapshot_hash` to `roots` table storage model.
+- `04-implementation-plan.md` Step 1: expanded from 3 tasks to 6, covering Nostr ingestion pipeline, signature validation, conflict resolution, relay aggregation, `graph_snapshot_hash` computation, and cohort selection. Exit criteria expanded to cover deterministic rebuilds, replace semantics, and event validation.
+- Spec files updated: `02-architecture.md`, `04-implementation-plan.md`.
 
 ### 14. Timestamp Privacy Goal Conflicts With Exact Submission Timestamp Field
 
@@ -385,20 +389,9 @@ Even if interaction timestamps are protected in proofs, exact submission and pub
 
 **Decision**: Option A — TypeScript/Circom-first. TypeScript for all services and client, Circom + snarkjs (WASM) for ZK, nostr-tools for Nostr, PostgreSQL for data. See `04-implementation-plan.md` "Technology Stack."
 
-### 13. Nostr WoT Ingestion Rules Are Underspecified (Replaceable Event Semantics)
+### 13. ~~Nostr WoT Ingestion Rules Are Underspecified (Replaceable Event Semantics)~~ RESOLVED
 
-Option A:
-Specify deterministic reducer:
-- signature-valid events only
-- replaceable-kind semantics (latest event per author)
-- deterministic tie-break rules
-- normalized graph snapshot hash included with each cohort root
-
-Option B:
-Outsource graph resolution to third-party indexer.
-
-Recommended:
-Option A to keep trust and reproducibility in-house.
+**Decision**: Option A — deterministic reducer with signature validation, replaceable-kind semantics, lexicographic tie-break, union-then-replace relay strategy, and `graph_snapshot_hash` per cohort root. See `02-architecture.md` "Nostr Ingestion Rules."
 
 ### 14. Timestamp Privacy Goal Conflicts With Exact Submission Timestamp Field
 
