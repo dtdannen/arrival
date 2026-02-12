@@ -9,9 +9,10 @@
 3. `epoch_id` (string)
 4. `content` (text or content reference)
 5. `posting_pubkey` (one-time key)
-6. `proof_bundle` (object)
-7. `created_at` (unix ts)
-8. `proof_version` (string)
+6. `signature` (Ed25519 signature by `posting_pubkey` over canonical serialization of all other body fields)
+7. `proof_bundle` (object)
+8. `created_at` (unix ts)
+9. `proof_version` (string)
 
 `proof_version` is intentionally top-level (not nested inside `proof_bundle`) so the gateway can version-gate before interpreting bundle internals.
 
@@ -50,10 +51,15 @@ The gateway never returns `"published"` synchronously. Publication happens at ba
 Returns:
 
 1. `distance_roots` — array of `{ distance_bucket, root_hash, k_size }` for each tier (`d<=1`, `d<=2`, `d<=3`)
-2. validity window
-3. proof policy metadata (`k_min`, allowed windows)
+2. `time_window_id` (string, current active window)
+3. `time_window_policy` (string: `"weekly"` | `"biweekly"` | `"monthly"` | `"quarterly"`)
+4. `window_start` (unix timestamp)
+5. `window_end` (unix timestamp)
+6. `receipt_volume_bucket` (string: `"low"` | `"medium"` | `"high"` — coarse to avoid leaking exact sales data)
+7. `k_min` (int)
+8. `t_min` (int)
 
-The client selects the closest (smallest) distance tier where `k_size >= k_min`. If no tier meets `k_min`, the review cannot be submitted.
+The client selects the closest (smallest) distance tier where `k_size >= k_min`. If no tier meets `k_min`, the review cannot be submitted. The client uses `window_start`, `window_end`, and `time_window_id` to construct the time-window proof.
 
 ## `POST /v1/reviews/submit`
 
@@ -86,11 +92,12 @@ Returns:
 
 ## Reject Code Canon
 
-1. `invalid_schema`
-2. `inactive_root`
-3. `insufficient_anonymity_set`
-4. `invalid_membership_proof`
-5. `invalid_interaction_proof`
-6. `invalid_timeblind_proof`
-7. `duplicate_nullifier`
-8. `unsupported_proof_version`
+1. `invalid_signature`
+2. `invalid_schema`
+3. `inactive_root`
+4. `insufficient_anonymity_set`
+5. `invalid_membership_proof`
+6. `invalid_interaction_proof`
+7. `invalid_timeblind_proof`
+8. `duplicate_nullifier`
+9. `unsupported_proof_version`

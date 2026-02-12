@@ -162,52 +162,41 @@ The spec previously treated Cashu blind signatures as proof-of-interaction recei
 
 **Affected files**: `07-risc0-evaluation.md`
 
-### 17. Window Authority Conflicts Across Docs
+### 17. ~~Window Authority Conflicts Across Docs~~ RESOLVED
 
-Three documents give contradictory answers about who determines time windows and what sizes are available:
+Three documents gave contradictory answers about who determines time windows and what sizes are available.
 
-- `02-architecture.md` step 4: "Client **selects** time window and constructs TimeBlind witness."
-- `11-time-window-policy.md`: "Time windows are **system-calculated and uniform per subject**. All reviewers for a given subject in a given period use the same window. Per-reviewer window variation is not allowed."
-- `08-open-decisions.md` lists window options as "weekly only" or "weekly + monthly" (two sizes).
-- `11-time-window-policy.md` window size table includes four sizes: weekly, biweekly, monthly, and quarterly.
+**Resolution**:
+- **Decision**: Option A — align all docs to system-assigned windows per `11-time-window-policy.md` (canonical owner of time-window policy).
+- `02-architecture.md` step 4: "Client selects" → "Client receives system-assigned time window from cohort-root endpoint."
+- `08-open-decisions.md`: TimeBlind window policy decision closed — system-calculated adaptive windows (weekly / biweekly / monthly / quarterly) per `11-time-window-policy.md`.
+- `11-time-window-policy.md`: no changes needed — already correct as canonical owner.
+- Spec files updated: `02-architecture.md`, `08-open-decisions.md`.
 
-These can't all be true. Either the client selects a window or the system assigns one. Either there are two window sizes or four.
+**Affected files**: `02-architecture.md`, `08-open-decisions.md`
 
-**Resolution needed**: Align all docs on window authority (system-assigned, per `11-time-window-policy.md`) and available window sizes. Update `02-architecture.md` submission flow and close the relevant open decision in `08-open-decisions.md`.
+### 18. ~~Submission Signing/Authenticity Path Is Missing~~ RESOLVED
 
-**Affected files**: `02-architecture.md`, `08-open-decisions.md`, `11-time-window-policy.md`
+`posting_pubkey` existed without a corresponding `signature` field, meaning anyone could claim any pubkey.
 
-### 18. Submission Signing/Authenticity Path Is Missing
+**Resolution**:
+- **Decision**: Option A — add `signature` field and verification step.
+- `09-event-and-api-spec.md`: added `signature` (Ed25519 by `posting_pubkey` over canonical body serialization) to `review_submission_v1`. Added `invalid_signature` reject code.
+- `02-architecture.md`: added signature verification as step 1 in the verification pipeline (before schema validation). Pipeline now has 9 steps.
+- Signature verification is cheap, prevents content tampering, and provides authenticity independent of ZK proof validity.
+- Spec files updated: `09-event-and-api-spec.md`, `02-architecture.md`.
 
-`04-implementation-plan.md` step 3 lists "proof bundle packaging and signing" as a deliverable. The README references a "one-time review posting key" model. But:
+**Affected files**: `09-event-and-api-spec.md`, `02-architecture.md`
 
-- `09-event-and-api-spec.md` has `posting_pubkey` as a field but no `signature` field.
-- `02-architecture.md` verification pipeline has no signature verification step.
+### 19. ~~Cohort-Root Endpoint Contract Out of Sync With Time-Window Policy~~ RESOLVED
 
-A `posting_pubkey` without a corresponding signature proves nothing — anyone could submit a review claiming any pubkey. The gateway has no way to verify that the submitter controls the claimed posting key. This is needed to prevent review content tampering and replay of someone else's proof bundle with different content.
+`11-time-window-policy.md` defined an expanded cohort-root endpoint response, but `09-event-and-api-spec.md` (the canonical API owner) didn't include the time-window fields.
 
-**Resolution needed**: Add a `signature` field to the submission event (signed by `posting_pubkey` over the review content and proof bundle). Add a signature verification step to the verification pipeline.
-
-**Affected files**: `09-event-and-api-spec.md`, `02-architecture.md`, `04-implementation-plan.md`
-
-### 19. Cohort-Root Endpoint Contract Out of Sync With Time-Window Policy
-
-`11-time-window-policy.md` defines an expanded cohort-root endpoint response with fields needed for the time-window proof flow:
-
-```
-time_window_id, time_window_policy, window_start, window_end,
-receipt_volume_bucket, k_min, t_min
-```
-
-But `09-event-and-api-spec.md` `GET /v1/subjects/{subject_id}/cohort-root` only returns:
-
-```
-active root hash, cohort size, validity window, proof policy metadata (k_min, allowed windows)
-```
-
-The client cannot construct a valid time-window proof without `window_start`, `window_end`, and `time_window_id` from the server. The pre-submission disclosure flow (showing the reviewer their anonymity set size) also requires `receipt_volume_bucket` and `t_min`.
-
-**Resolution needed**: Backport the expanded endpoint response from `11-time-window-policy.md` into `09-event-and-api-spec.md` as the canonical contract.
+**Resolution**:
+- **Decision**: Option A — merged all time-window fields into `09-event-and-api-spec.md` as the canonical contract.
+- `09-event-and-api-spec.md`: cohort-root endpoint now returns `time_window_id`, `time_window_policy`, `window_start`, `window_end`, `receipt_volume_bucket`, `k_min`, `t_min` alongside `distance_roots`.
+- `11-time-window-policy.md`: replaced inline endpoint definition with reference to `09-event-and-api-spec.md` as canonical. Kept `receipt_volume_bucket` mapping (domain-specific detail owned by time-window policy).
+- Spec files updated: `09-event-and-api-spec.md`, `11-time-window-policy.md`.
 
 **Affected files**: `09-event-and-api-spec.md`, `11-time-window-policy.md`
 
@@ -418,35 +407,14 @@ Option A plus Option C for stronger linkage resistance.
 
 **Decision**: Option A — `window_start` and `window_end` added to public inputs and proof bundle. Verifier checks submitted values match server's authoritative bounds for `time_window_id` before ZK verification.
 
-### 17. Window Authority Conflicts Across Docs
+### 17. ~~Window Authority Conflicts Across Docs~~ RESOLVED
 
-Option A:
-Align all docs to system-assigned windows per `11-time-window-policy.md`. Update `02-architecture.md` step 4 to say client *receives* (not selects) the window. Close the window policy open decision in `08-open-decisions.md` with the four-tier adaptive scheme.
+**Decision**: Option A — system-assigned windows per `11-time-window-policy.md`. Client receives (not selects) the window. Open decision closed.
 
-Option B:
-Revert to client-selected windows from a fixed menu (weekly/monthly only). Simpler but loses the adaptive anonymity protection.
+### 18. ~~Submission Signing/Authenticity Path Is Missing~~ RESOLVED
 
-Recommended:
-Option A. System-assigned windows are a core privacy property — letting clients choose fragments the anonymity set.
+**Decision**: Option A — `signature` field added (Ed25519 by `posting_pubkey`). Signature verification is step 1 in the pipeline with `invalid_signature` reject code.
 
-### 18. Submission Signing/Authenticity Path Is Missing
+### 19. ~~Cohort-Root Endpoint Contract Out of Sync With Time-Window Policy~~ RESOLVED
 
-Option A:
-Add `signature` field to `review_submission_v1` (Ed25519 signature by `posting_pubkey` over canonical serialization of content + proof bundle). Add signature verification as step 0 in the verification pipeline (before schema validation of proof contents).
-
-Option B:
-Remove `posting_pubkey` entirely and rely solely on proof bundle integrity (the ZK proof itself authenticates the submission). No separate signature needed if the proof binds to the content.
-
-Recommended:
-Option A. Signature verification is cheap, prevents content tampering, and provides a clear authenticity chain independent of proof validity. Option B is viable but couples content integrity to ZK verification ordering.
-
-### 19. Cohort-Root Endpoint Contract Out of Sync With Time-Window Policy
-
-Option A:
-Update `09-event-and-api-spec.md` cohort-root endpoint to match `11-time-window-policy.md`'s expanded response. Make `11-time-window-policy.md` reference the canonical API spec rather than defining its own.
-
-Option B:
-Split into two endpoints: cohort-root (membership data) and time-window-policy (window/receipt data). Keeps concerns separate.
-
-Recommended:
-Option A for MVP simplicity. A single endpoint gives the client everything needed for proof construction in one call.
+**Decision**: Option A — single canonical endpoint in `09-event-and-api-spec.md` with all fields needed for proof construction. `11-time-window-policy.md` references the canonical spec.

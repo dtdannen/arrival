@@ -16,9 +16,7 @@
 2. Epoch granularity:
    - weekly default
    - monthly option
-3. TimeBlind window policy:
-   - weekly only
-   - weekly + monthly
+3. ~~TimeBlind window policy~~ **CLOSED**: system-calculated adaptive windows (weekly / biweekly / monthly / quarterly) per `11-time-window-policy.md`
 
 ## Proof/Infra Decisions
 

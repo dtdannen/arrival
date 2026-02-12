@@ -104,22 +104,9 @@ This prevents an attacker from correlating review submission time with publicati
 
 ## API Surface
 
-### Cohort Root Endpoint (updated)
+### Cohort Root Endpoint
 
-```
-GET /v1/subjects/{subject_id}/cohort-root
-
-Returns:
-  cohort_root_hash    (string)
-  cohort_size         (int, from server-side roots table)
-  time_window_id      (string, current active window)
-  time_window_policy  (string, e.g. "weekly" | "biweekly" | "monthly" | "quarterly")
-  window_start        (unix timestamp)
-  window_end          (unix timestamp)
-  receipt_volume_bucket (string, "low" | "medium" | "high")
-  k_min               (int)
-  t_min               (int)
-```
+The canonical endpoint contract is defined in `09-event-and-api-spec.md` (`GET /v1/subjects/{subject_id}/cohort-root`). The endpoint returns time-window fields (`time_window_id`, `time_window_policy`, `window_start`, `window_end`, `receipt_volume_bucket`, `t_min`) alongside cohort root data.
 
 `receipt_volume_bucket` is deliberately coarse to avoid leaking exact sales data for the subject. Mapping:
 

@@ -41,7 +41,7 @@
 1. User selects subject and writes review text/media.
 2. Client fetches latest cohort root metadata for subject.
 3. Client attaches interaction receipt witness.
-4. Client selects time window and constructs TimeBlind witness.
+4. Client receives system-assigned time window from cohort-root endpoint and constructs time-window witness (see `11-time-window-policy.md`).
 5. Client generates proof bundle:
    - membership proof
    - interaction proof
@@ -55,14 +55,15 @@
 
 ## Verification Pipeline
 
-1. Validate proof bundle schema and version.
-2. Verify subject root exists and is active.
-3. Verify WoT membership proof against active root.
-4. Verify interaction receipt signature/proof.
-5. Verify time-window proof and policy window limits.
-6. Compute and check nullifier uniqueness in `(subject_id, epoch_id)`.
-7. Enforce `k_min` threshold from root metadata.
-8. Admit or reject.
+1. Verify `signature` against `posting_pubkey` over canonical body serialization. Reject if invalid.
+2. Validate proof bundle schema and version.
+3. Verify subject root exists and is active.
+4. Verify WoT membership proof against active root.
+5. Verify interaction receipt signature/proof.
+6. Verify time-window proof and policy window limits.
+7. Compute and check nullifier uniqueness in `(subject_id, epoch_id)`.
+8. Enforce `k_min` threshold from root metadata.
+9. Admit or reject.
 
 ## Storage Model (MVP)
 
