@@ -100,7 +100,7 @@ But `11-time-window-policy.md` requires a hold/defer + batch release lifecycle:
 
 **Affected files**: `02-architecture.md`, `03-proof-spec.md`, `09-event-and-api-spec.md`, `10-test-plan.md`
 
-### 16. Time-Window Proof Inputs Don't Match API/Proof Schema
+### 16. ~~Time-Window Proof Inputs Don't Match API/Proof Schema~~ RESOLVED
 
 `11-time-window-policy.md` defines three public inputs for the time-window circuit:
 
@@ -110,13 +110,17 @@ But `11-time-window-policy.md` requires a hold/defer + batch release lifecycle:
 
 The circuit literally requires `window_start` and `window_end` to perform the range check (`LessEqThan(32): window_start <= t` and `t <= window_end`).
 
-But `03-proof-spec.md` public inputs only list `time_window_id`, and `09-event-and-api-spec.md` `proof_bundle` fields only include `time_window_id`. Neither carries `window_start` or `window_end`.
+But `03-proof-spec.md` public inputs only listed `time_window_id`, and `09-event-and-api-spec.md` `proof_bundle` fields only included `time_window_id`. Neither carried `window_start` or `window_end`.
 
-Without these values in the proof bundle and public inputs, the circuit cannot be verified. The verifier needs the public inputs that were used during proving.
+**Resolution**:
+- **Decision**: Option A — add `window_start` and `window_end` to both `03-proof-spec.md` public inputs and `09-event-and-api-spec.md` `proof_bundle` fields.
+- The verifier performs a server-side equality check: looks up the authoritative window bounds for the submitted `time_window_id` and rejects if the client-submitted `window_start`/`window_end` don't match. This check runs before ZK proof verification in the admission pseudocode.
+- The client gets these values from the cohort-root endpoint (already specified in `11-time-window-policy.md` API surface).
+- Also aligned `03-proof-spec.md` allowed window sizes with `11-time-window-policy.md`'s four-tier adaptive scheme (weekly, biweekly, monthly, quarterly).
+- `11-time-window-policy.md`: no changes needed — it was already correct as the canonical owner.
+- Spec files updated: `03-proof-spec.md` (public inputs, admission pseudocode, window sizes), `09-event-and-api-spec.md` (proof_bundle fields).
 
-**Resolution needed**: Add `window_start` and `window_end` to both `03-proof-spec.md` public inputs and `09-event-and-api-spec.md` `proof_bundle` fields. The verifier must also confirm these match the server's authoritative window bounds for the given `time_window_id`.
-
-**Affected files**: `03-proof-spec.md`, `09-event-and-api-spec.md`, `11-time-window-policy.md`
+**Affected files**: `03-proof-spec.md`, `09-event-and-api-spec.md`
 
 ## High
 
@@ -424,16 +428,9 @@ Option A plus Option C for stronger linkage resistance.
 
 **Decision**: Option A — three-state lifecycle (`rejected` / `admitted` / `published`). Gateway returns `status: "admitted"` with `held_reason` on success. Batch release job transitions `admitted` → `published` at window close when `t_min` met. No max hold duration — window merging is the escape valve, and pre-submission disclosure warns the reviewer.
 
-### 16. Time-Window Proof Inputs Don't Match API/Proof Schema
+### 16. ~~Time-Window Proof Inputs Don't Match API/Proof Schema~~ RESOLVED
 
-Option A:
-Add `window_start` and `window_end` to `03-proof-spec.md` public inputs and to `09-event-and-api-spec.md` `proof_bundle` fields. Verifier confirms submitted values match server's authoritative window bounds for the `time_window_id`.
-
-Option B:
-Verifier derives `window_start` and `window_end` from `time_window_id` server-side (never sent by client). Client still needs them for proof generation but gets them from the cohort-root endpoint.
-
-Recommended:
-Option A. The values are already public inputs to the circuit — they must be available to the verifier for proof verification. Sending them in the bundle is explicit and verifiable.
+**Decision**: Option A — `window_start` and `window_end` added to public inputs and proof bundle. Verifier checks submitted values match server's authoritative bounds for `time_window_id` before ZK verification.
 
 ### 17. Window Authority Conflicts Across Docs
 

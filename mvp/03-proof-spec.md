@@ -18,10 +18,12 @@ Each review submission must satisfy all four statements:
 1. `subject_id`
 2. `epoch_id`
 3. `cohort_root_hash`
-4. `time_window_id` (week/month bucket)
-5. `scope` (derived: `Poseidon(domain_tag, subject_id, epoch_id)`)
-6. `nullifier_hash`
-7. `proof_version`
+4. `time_window_id` (identifies the window period)
+5. `window_start` (unix timestamp, beginning of window)
+6. `window_end` (unix timestamp, end of window)
+7. `scope` (derived: `Poseidon(domain_tag, subject_id, epoch_id)`)
+8. `nullifier_hash`
+9. `proof_version`
 
 ## Private Inputs (Witness)
 
@@ -62,7 +64,7 @@ Requirements:
 
 ## TimeBlind Policy
 
-1. Allowed windows: weekly or monthly
+1. Allowed windows: weekly, biweekly, monthly, or quarterly (see `11-time-window-policy.md` for adaptive sizing rules)
 2. Exact timestamp is never a public field
 3. Reject narrow windows below policy minimum
 
@@ -76,6 +78,9 @@ if server_k_size(cohort_root_hash) < k_min: reject("insufficient_anonymity_set")
 # k_size is always read from the server-side roots table, never from client input
 if !verify_membership(bundle): reject("invalid_membership_proof")
 if !verify_interaction(bundle): reject("invalid_interaction_proof")
+if !window_bounds_match(time_window_id, window_start, window_end): reject("invalid_timeblind_proof")
+# verifier looks up authoritative window bounds for time_window_id and confirms
+# client-submitted window_start/window_end match exactly
 if !verify_timeblind(bundle): reject("invalid_timeblind_proof")
 if nullifier_exists(subject_id, epoch_id, nullifier_hash): reject("duplicate_nullifier")
 store_nullifier(subject_id, epoch_id, nullifier_hash)

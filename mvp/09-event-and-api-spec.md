@@ -22,7 +22,9 @@
 3. `interaction_proof`
 4. `timeblind_proof`
 5. `time_window_id`
-6. `nullifier_hash`
+6. `window_start` (unix timestamp)
+7. `window_end` (unix timestamp)
+8. `nullifier_hash`
 
 `proof_bundle` must not contain `proof_version`; version selection is done at the top-level request schema.
 
