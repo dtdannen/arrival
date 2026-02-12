@@ -103,12 +103,32 @@ At admission, the gateway performs these checks as part of `verify_interaction(b
 3. **Keyset compromise**: If an issuer's signing key is compromised, fake receipts can be generated. Mitigated by keyset rotation limiting the blast radius to one time period.
 4. **Timing correlation at issuance**: If the issuer logs blinding request timestamps and few interactions occur, the issuer might narrow linkability. Mitigated by keyset granularity being coarser than individual interaction timing.
 
+## Receipt Expiration and Epoch Interaction
+
+Receipt expiration is emergent from the time-window and keyset systems. No separate expiration timer or policy knob is needed.
+
+### Expiration rule
+
+A receipt is usable as long as its keyset period falls within an open time window for the subject. Once the time window containing the keyset period closes (and batch release completes), the receipt can no longer satisfy the time-window proof — the verifier will reject it because the keyset period won't fall within any currently open window's bounds.
+
+### Cross-epoch receipt reuse
+
+The one-receipt-one-review rule (`receipt_hash` in the spent-receipts table) is epoch-independent. Once a receipt is spent, it is spent permanently regardless of epoch boundaries. A reviewer who wants to review the same subject in a new epoch needs a new receipt from a new interaction.
+
+This is independent of the nullifier, which prevents the same *identity* from reviewing the same subject in the same epoch. The two checks are complementary:
+
+- **Nullifier**: same identity, same subject, same epoch → blocked (even with different receipts)
+- **Spent receipt**: same receipt, any epoch, any identity → blocked (even across epoch boundaries)
+
+### Interaction with time-window proof
+
+The receipt's keyset period provides the temporal binding for the time-window proof. The reviewer uses a timestamp within the keyset period as the private `interaction_timestamp` witness. The time-window circuit proves this timestamp falls within the declared window. The verifier independently confirms the keyset period falls within the window bounds (verification step 4). This chain — keyset period → private timestamp → time-window proof — is what makes receipt expiration emergent rather than requiring a separate policy.
+
 ## Open Items (to close before build lock)
 
 1. Specific blind signature scheme (RSA blind signatures, BDH-based, etc.)
 2. Accepted issuer registry governance (who can register as an issuer, how are they vetted)
 3. Keyset rotation schedule (daily recommended, but depends on interaction volume patterns)
-4. Receipt expiration policy (how long after issuance a receipt remains usable)
 
 ## Test Requirements
 

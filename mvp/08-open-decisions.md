@@ -34,7 +34,7 @@ Receipt lifecycle, mechanism (blind signatures), subject/reviewer binding, and s
 1. Specific blind signature scheme (RSA blind signatures, BDH-based, etc.)
 2. Accepted issuer registry governance (who can register, vetting process)
 3. Keyset rotation schedule (daily recommended)
-4. Receipt expiration policy (how long after issuance a receipt remains usable)
+4. ~~Receipt expiration policy~~ **CLOSED**: expiration is emergent from time-window + keyset system. A receipt is usable as long as its keyset period falls within an open time window. No separate expiration timer needed. Cross-epoch reuse blocked by epoch-independent spent-receipts table. See `12-receipt-spec.md` "Receipt Expiration and Epoch Interaction."
 
 ## Security/Privacy Decisions
 

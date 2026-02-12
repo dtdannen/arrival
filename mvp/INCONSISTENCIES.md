@@ -269,7 +269,7 @@ The reject code `unsupported_proof_version` has no corresponding explicit step i
 - `03-proof-spec.md`: no changes needed — pseudocode was already correct and served as the reference for the alignment.
 - Spec files updated: `02-architecture.md`, `09-event-and-api-spec.md`.
 
-### 11. Receipt Expiration vs. Epoch Boundary Interaction
+### 11. ~~Receipt Expiration vs. Epoch Boundary Interaction~~ RESOLVED
 
 `08-open-decisions.md` lists receipt expiration as open. But this interacts with epochs in ways that need protocol-level resolution:
 
@@ -279,7 +279,18 @@ The reject code `unsupported_proof_version` has no corresponding explicit step i
 
 These are not independent policy knobs -- they interact with each other and with the nullifier scope.
 
-**Affected files**: `08-open-decisions.md`, `03-proof-spec.md`
+**Affected files**: `08-open-decisions.md`, `03-proof-spec.md`, `12-receipt-spec.md`
+
+**Resolution**:
+- **Decision**: Option A — receipt expiration is emergent from the time-window + keyset system, not a separate policy knob.
+- **Expiration**: A receipt is usable as long as its keyset period falls within an open time window for the subject. No separate timer needed.
+- **Cross-epoch reuse**: Blocked by the one-receipt-one-review rule (`receipt_hash` in spent-receipts table), which is epoch-independent. Same receipt can never be used twice regardless of epoch boundaries.
+- **Temporal binding**: The keyset period is the receipt's temporal binding for the time-window proof. Already specified in `12-receipt-spec.md` temporal binding flow.
+- **Nullifier vs. spent-receipt complementarity**: Nullifier prevents same identity re-reviewing in same epoch (even with different receipts). Spent-receipt prevents same receipt reuse (even across epochs or identities).
+- `12-receipt-spec.md`: added "Receipt Expiration and Epoch Interaction" section documenting expiration rule, cross-epoch behavior, and time-window proof interaction. Removed receipt expiration from open items.
+- `08-open-decisions.md`: closed receipt expiration policy decision with reference to `12-receipt-spec.md`.
+- `03-proof-spec.md`: no changes needed — `verify_interaction(bundle)` delegates to receipt spec.
+- Spec files updated: `12-receipt-spec.md`, `08-open-decisions.md`.
 
 ### 12. No Technology Stack Specified
 
@@ -358,16 +369,9 @@ Even if interaction timestamps are protected in proofs, exact submission and pub
 
 **Decision**: Option A — single canonical pipeline (10 verification steps, 10 reject codes, 1:1 mapping). Pseudocode in `03-proof-spec.md` is the canonical source; `02-architecture.md` pipeline and `09-event-and-api-spec.md` reject codes aligned to match.
 
-### 11. Receipt Expiration vs. Epoch Boundary Interaction
+### 11. ~~Receipt Expiration vs. Epoch Boundary Interaction~~ RESOLVED
 
-Option A:
-Policy: receipt has explicit validity interval and can be used exactly once; proof/verifier enforce both receipt validity and epoch policy.
-
-Option B:
-Policy: receipt validity ignored once issued; epoch/nullifier only enforce freshness.
-
-Recommended:
-Option A for predictable replay and stale-receipt handling.
+**Decision**: Option A (refined) — receipt expiration is emergent from time-window + keyset system. No separate expiration timer. Cross-epoch reuse blocked by epoch-independent spent-receipts table. Nullifier and spent-receipt checks are complementary. See `12-receipt-spec.md` "Receipt Expiration and Epoch Interaction."
 
 ### 12. No Technology Stack Specified
 
