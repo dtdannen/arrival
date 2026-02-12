@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MVP Architecture — ZK-First Anonymous Reviews</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0f; color: #e0e0e0; overflow-x: hidden; }
+
+  .header { text-align: center; padding: 40px 20px 20px; }
+  .header h1 { font-size: 28px; font-weight: 600; color: #fff; letter-spacing: -0.5px; }
+  .header p { font-size: 14px; color: #888; margin-top: 8px; }
+
+  .tabs { display: flex; justify-content: center; gap: 8px; margin: 20px 0 30px; flex-wrap: wrap; padding: 0 20px; }
+  .tab { padding: 10px 20px; border-radius: 8px; border: 1px solid #222; background: #111; color: #888; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.25s; }
+  .tab:hover { border-color: #444; color: #ccc; }
+  .tab.active { background: #1a1a2e; border-color: #4a6cf7; color: #fff; }
+
+  .view { display: none; max-width: 1200px; margin: 0 auto; padding: 0 20px 60px; }
+  .view.active { display: block; }
+
+  /* Architecture View */
+  .arch-container { position: relative; }
+  .arch-row { display: flex; justify-content: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+  .arch-label { text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #555; margin-bottom: 12px; font-weight: 600; }
+
+  .component {
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 20px;
+    width: 220px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .component:hover { border-color: #4a6cf7; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(74,108,247,0.1); }
+  .component.highlight { border-color: #4a6cf7; background: #12122a; box-shadow: 0 8px 24px rgba(74,108,247,0.15); }
+  .component .icon { font-size: 24px; margin-bottom: 10px; }
+  .component .name { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+  .component .desc { font-size: 12px; color: #777; line-height: 1.5; }
+  .component .tag { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 4px; margin-top: 8px; font-weight: 500; }
+  .tag.client { background: #1a2a1a; color: #4ade80; }
+  .tag.backend { background: #1a1a2e; color: #818cf8; }
+  .tag.store { background: #2a1a1a; color: #f87171; }
+  .tag.public { background: #2a2a1a; color: #fbbf24; }
+
+  .detail-panel {
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 24px;
+    display: none;
+    animation: fadeIn 0.3s;
+  }
+  .detail-panel.visible { display: block; }
+  .detail-panel h3 { font-size: 18px; color: #fff; margin-bottom: 12px; }
+  .detail-panel .detail-section { margin-bottom: 16px; }
+  .detail-panel .detail-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #4a6cf7; margin-bottom: 6px; font-weight: 600; }
+  .detail-panel .detail-text { font-size: 13px; color: #aaa; line-height: 1.7; }
+  .detail-panel .detail-text code { background: #1a1a2e; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #818cf8; }
+
+  /* Flow View */
+  .flow-container { max-width: 720px; margin: 0 auto; }
+  .flow-step {
+    display: flex; gap: 20px; align-items: flex-start; margin-bottom: 8px;
+    position: relative;
+  }
+  .flow-step::before {
+    content: '';
+    position: absolute;
+    left: 23px;
+    top: 48px;
+    bottom: -8px;
+    width: 2px;
+    background: #222;
+  }
+  .flow-step:last-child::before { display: none; }
+  .flow-num {
+    min-width: 48px; height: 48px;
+    background: #1a1a2e;
+    border: 2px solid #4a6cf7;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; color: #4a6cf7;
+    position: relative; z-index: 1;
+  }
+  .flow-content {
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 20px;
+    flex: 1;
+    margin-bottom: 8px;
+  }
+  .flow-content h4 { font-size: 15px; color: #fff; margin-bottom: 6px; }
+  .flow-content p { font-size: 13px; color: #888; line-height: 1.6; }
+  .flow-content .flow-components { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .flow-chip { font-size: 11px; padding: 3px 10px; border-radius: 6px; background: #1a1a2e; color: #818cf8; border: 1px solid #2a2a4e; }
+
+  /* Proof View */
+  .proof-container { max-width: 800px; margin: 0 auto; }
+  .proof-card {
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    transition: all 0.3s;
+  }
+  .proof-card:hover { border-color: #333; }
+  .proof-icon { font-size: 32px; min-width: 48px; text-align: center; }
+  .proof-info h4 { font-size: 16px; color: #fff; margin-bottom: 4px; }
+  .proof-info .proof-statement { font-size: 13px; color: #4ade80; font-style: italic; margin-bottom: 10px; }
+  .proof-info .proof-detail { font-size: 13px; color: #888; line-height: 1.6; }
+  .proof-io { display: flex; gap: 24px; margin-top: 12px; flex-wrap: wrap; }
+  .proof-io-col h5 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 6px; }
+  .proof-io-col li { font-size: 12px; color: #aaa; margin-bottom: 3px; list-style: none; }
+  .proof-io-col li::before { content: '→ '; color: #4a6cf7; }
+
+  /* Privacy View */
+  .privacy-container { max-width: 720px; margin: 0 auto; }
+  .privacy-rule {
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .privacy-icon { font-size: 24px; min-width: 36px; text-align: center; }
+  .privacy-text h4 { font-size: 14px; color: #fff; margin-bottom: 4px; }
+  .privacy-text p { font-size: 13px; color: #888; line-height: 1.6; }
+  .privacy-value { font-size: 12px; color: #fbbf24; background: #2a2a1a; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-top: 6px; }
+
+  /* Verification Pipeline */
+  .pipeline-container { max-width: 720px; margin: 0 auto; }
+  .pipeline-step {
+    display: flex; gap: 16px; align-items: center; margin-bottom: 4px; padding: 14px 20px;
+    background: #111; border: 1px solid #222; border-radius: 10px;
+    transition: all 0.3s;
+  }
+  .pipeline-step:hover { border-color: #333; }
+  .pipeline-check { font-size: 18px; min-width: 28px; text-align: center; }
+  .pipeline-label { font-size: 14px; color: #ccc; flex: 1; }
+  .pipeline-fail { font-size: 11px; color: #f87171; background: #2a1a1a; padding: 3px 10px; border-radius: 5px; white-space: nowrap; }
+  .pipeline-arrow { text-align: center; color: #333; font-size: 16px; margin-bottom: 4px; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>ZK-First Anonymous Reviews — MVP Architecture</h1>
+  <p>Click components for details. Switch views to explore different aspects of the system.</p>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showView('arch')">System Components</div>
+  <div class="tab" onclick="showView('flow')">End-to-End Flow</div>
+  <div class="tab" onclick="showView('proof')">Proof Bundle</div>
+  <div class="tab" onclick="showView('pipeline')">Verification Pipeline</div>
+  <div class="tab" onclick="showView('privacy')">Privacy Rules</div>
+</div>
+
+<!-- ==================== ARCHITECTURE VIEW ==================== -->
+<div class="view active" id="view-arch">
+  <div class="arch-container">
+
+    <div class="arch-label">Client-Side (runs on your device)</div>
+    <div class="arch-row">
+      <div class="component" onclick="showDetail('identity-client')">
+        <div class="icon">🔑</div>
+        <div class="name">Identity Client</div>
+        <div class="desc">Manages your persistent key. Derives throwaway posting keys for each review.</div>
+        <div class="tag client">Client</div>
+      </div>
+      <div class="component" onclick="showDetail('proof-engine')">
+        <div class="icon">⚡</div>
+        <div class="name">Proof Engine</div>
+        <div class="desc">Generates the ZK proof bundle locally. Your secrets never leave your device.</div>
+        <div class="tag client">Client</div>
+      </div>
+      <div class="component" onclick="showDetail('web-ui')">
+        <div class="icon">🖥️</div>
+        <div class="name">Web UI</div>
+        <div class="desc">Review submission flow and verified review feed with trust badges.</div>
+        <div class="tag client">Client</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;color:#333;margin:8px 0 16px;font-size:20px;">↕</div>
+
+    <div class="arch-label">Backend Services</div>
+    <div class="arch-row">
+      <div class="component" onclick="showDetail('wot-indexer')">
+        <div class="icon">🕸️</div>
+        <div class="name">WoT Indexer</div>
+        <div class="desc">Ingests Nostr follow graph. Computes relevant cohorts per business.</div>
+        <div class="tag backend">Backend</div>
+      </div>
+      <div class="component" onclick="showDetail('cohort-root')">
+        <div class="icon">🌳</div>
+        <div class="name">Cohort Root Publisher</div>
+        <div class="desc">Builds Merkle trees from cohorts. Publishes roots for proof verification.</div>
+        <div class="tag backend">Backend</div>
+      </div>
+      <div class="component" onclick="showDetail('receipt')">
+        <div class="icon">🧾</div>
+        <div class="name">Receipt Issuer / Verifier</div>
+        <div class="desc">Issues blind-signature receipts at point of interaction. Verifies them later.</div>
+        <div class="tag backend">Backend</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;color:#333;margin:8px 0 16px;font-size:20px;">↕</div>
+
+    <div class="arch-row">
+      <div class="component" onclick="showDetail('review-gateway')">
+        <div class="icon">🛡️</div>
+        <div class="name">Review Gateway</div>
+        <div class="desc">Verifies proof bundles. Enforces all admission policies. The single gatekeeper.</div>
+        <div class="tag backend">Backend</div>
+      </div>
+      <div class="component" onclick="showDetail('review-feed')">
+        <div class="icon">📡</div>
+        <div class="name">Review Feed API</div>
+        <div class="desc">Serves admitted reviews with verification badges and trust-distance filters.</div>
+        <div class="tag backend">Backend</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;color:#333;margin:8px 0 16px;font-size:20px;">↕</div>
+
+    <div class="arch-label">Storage</div>
+    <div class="arch-row">
+      <div class="component" onclick="showDetail('nullifier-store')">
+        <div class="icon">🚫</div>
+        <div class="name">Nullifier Store</div>
+        <div class="desc">Tracks used nullifiers per (subject, epoch). Prevents double reviews.</div>
+        <div class="tag store">Store</div>
+      </div>
+      <div class="component" onclick="showDetail('data-tables')">
+        <div class="icon">🗄️</div>
+        <div class="name">Data Tables</div>
+        <div class="desc">Roots, reviews, nullifiers, receipts. Privacy-minimized by default.</div>
+        <div class="tag store">Store</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;color:#333;margin:24px 0 16px;font-size:20px;">↕</div>
+
+    <div class="arch-label">External</div>
+    <div class="arch-row">
+      <div class="component" onclick="showDetail('nostr')">
+        <div class="icon">🌐</div>
+        <div class="name">Nostr Network</div>
+        <div class="desc">Follow graph source. Identity layer. Relay infrastructure for events.</div>
+        <div class="tag public">External</div>
+      </div>
+      <div class="component" onclick="showDetail('cashu')">
+        <div class="icon">🪙</div>
+        <div class="name">Cashu / Blind Sigs</div>
+        <div class="desc">Blind signature protocol for unlinkable interaction receipts.</div>
+        <div class="tag public">External</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-panel" id="detail-panel">
+    <h3 id="detail-title"></h3>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
+<!-- ==================== FLOW VIEW ==================== -->
+<div class="view" id="view-flow">
+  <div class="flow-container">
+
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-content">
+        <h4>Visit a business</h4>
+        <p>You buy a coffee, get a haircut, see a doctor. At point of interaction, the business issues you a blind-signature receipt — a cryptographic token proving "someone transacted here" without encoding who.</p>
+        <div class="flow-components"><span class="flow-chip">Receipt Issuer</span><span class="flow-chip">Cashu Blind Sigs</span></div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-content">
+        <h4>Write your review</h4>
+        <p>Later (hours, days, whenever), you open the app, pick the business, and write your honest review. Your persistent Nostr identity is used only to look up your WoT position — it never touches the review itself.</p>
+        <div class="flow-components"><span class="flow-chip">Web UI</span><span class="flow-chip">Identity Client</span></div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-content">
+        <h4>Fetch cohort root</h4>
+        <p>The client fetches the current Merkle root for this business's WoT cohort — the set of people relevant to this subject. The root also tells you the cohort size (must be ≥ 50 for k_min).</p>
+        <div class="flow-components"><span class="flow-chip">Cohort Root Publisher</span><span class="flow-chip">WoT Indexer</span></div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-content">
+        <h4>Generate proof bundle locally</h4>
+        <p>The proof engine runs on your device. It takes your private inputs (identity secret, Merkle path, receipt, timestamp) and produces a single proof that says: I'm in the cohort, I was a customer, my visit was within an allowed time window, and here's my one-time nullifier. Your secrets never leave your machine.</p>
+        <div class="flow-components"><span class="flow-chip">Proof Engine</span><span class="flow-chip">Semaphore/NullReview</span><span class="flow-chip">TimeBlind</span></div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-content">
+        <h4>Submit with throwaway key</h4>
+        <p>The client derives a one-time posting key (unlinked to your real identity), signs the review, and submits the review + proof bundle to the gateway. The posting key is used once and discarded.</p>
+        <div class="flow-components"><span class="flow-chip">Identity Client</span><span class="flow-chip">Review Gateway</span></div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-num">6</div>
+      <div class="flow-content">
+        <h4>Gateway verifies everything</h4>
+        <p>The gateway runs 7 checks in order: valid schema → active root → membership proof → interaction receipt → time-window proof → nullifier uniqueness → k_min threshold. Fail any one and the review is rejected with a specific error code.</p>
+        <div class="flow-components"><span class="flow-chip">Review Gateway</span><span class="flow-chip">Nullifier Store</span></div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-num">7</div>
+      <div class="flow-content">
+        <h4>Review published with badges</h4>
+        <p>If admitted, the review is indexed with verification metadata: WoT-qualified badge, interaction-verified badge, anonymity-set size. It's published on a delay (bucketed to prevent timing correlation).</p>
+        <div class="flow-components"><span class="flow-chip">Review Feed API</span><span class="flow-chip">Data Tables</span></div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-num">8</div>
+      <div class="flow-content">
+        <h4>Readers see trust-filtered feed</h4>
+        <p>When someone browses reviews, they see them filtered by trust distance (1st, 2nd, 3rd degree connections). Each review shows its verification badges. Below-k_min reviews are never individually visible. The reader can toggle between "all verified" and "my network only."</p>
+        <div class="flow-components"><span class="flow-chip">Web UI</span><span class="flow-chip">Review Feed API</span><span class="flow-chip">WoT Indexer</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==================== PROOF VIEW ==================== -->
+<div class="view" id="view-proof">
+  <div class="proof-container">
+    <p style="text-align:center;color:#888;font-size:14px;margin-bottom:24px;">The proof bundle is generated client-side and contains four statements, verified as a single unit.</p>
+
+    <div class="proof-card">
+      <div class="proof-icon">🌳</div>
+      <div class="proof-info">
+        <h4>1. Membership Proof</h4>
+        <div class="proof-statement">"I know a secret corresponding to a commitment in the active WoT cohort root for this subject."</div>
+        <div class="proof-detail">Proves you belong to the relevant trust network for this business without revealing which member you are. Uses a Merkle inclusion proof against the published cohort root.</div>
+        <div class="proof-io">
+          <div class="proof-io-col">
+            <h5>Public Inputs</h5>
+            <ul>
+              <li>cohort_root_hash</li>
+              <li>subject_id</li>
+            </ul>
+          </div>
+          <div class="proof-io-col">
+            <h5>Private Witness</h5>
+            <ul>
+              <li>identity secret</li>
+              <li>Merkle path to root</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="proof-card">
+      <div class="proof-icon">🧾</div>
+      <div class="proof-info">
+        <h4>2. Interaction Proof</h4>
+        <div class="proof-statement">"I possess a valid receipt issued for this subject by an accepted issuer."</div>
+        <div class="proof-detail">Proves you actually transacted with the business. The blind-signature receipt was issued at point of interaction but can't be linked back to you. The proof validates the receipt without exposing the token itself.</div>
+        <div class="proof-io">
+          <div class="proof-io-col">
+            <h5>Public Inputs</h5>
+            <ul>
+              <li>subject_id</li>
+              <li>issuer public key</li>
+            </ul>
+          </div>
+          <div class="proof-io-col">
+            <h5>Private Witness</h5>
+            <ul>
+              <li>receipt token</li>
+              <li>issuer signature data</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="proof-card">
+      <div class="proof-icon">⏰</div>
+      <div class="proof-info">
+        <h4>3. TimeBlind Proof</h4>
+        <div class="proof-statement">"My interaction happened within an allowed time window."</div>
+        <div class="proof-detail">Proves your visit fell within a broad time window (week or month) without revealing the exact timestamp. This prevents the business from correlating "review posted at 3:02 PM" with "customer checked out at 2:58 PM."</div>
+        <div class="proof-io">
+          <div class="proof-io-col">
+            <h5>Public Inputs</h5>
+            <ul>
+              <li>time_window_id</li>
+              <li>window bounds</li>
+            </ul>
+          </div>
+          <div class="proof-io-col">
+            <h5>Private Witness</h5>
+            <ul>
+              <li>exact interaction timestamp</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="proof-card">
+      <div class="proof-icon">🚫</div>
+      <div class="proof-info">
+        <h4>4. Uniqueness (Nullifier)</h4>
+        <div class="proof-statement">"My scoped nullifier for this subject and epoch is unique."</div>
+        <div class="proof-detail">Deterministically derived from your secret + business ID + time epoch. Same person reviewing same business in same week = same nullifier = rejected. Different business or different week = different nullifier = allowed. The nullifier itself reveals nothing about who you are.</div>
+        <div class="proof-io">
+          <div class="proof-io-col">
+            <h5>Public Inputs</h5>
+            <ul>
+              <li>nullifier_hash</li>
+              <li>subject_id</li>
+              <li>epoch_id</li>
+            </ul>
+          </div>
+          <div class="proof-io-col">
+            <h5>Private Witness</h5>
+            <ul>
+              <li>identity secret</li>
+              <li>domain tag</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#0d1a0d; border:1px solid #1a3a1a; border-radius:12px; padding:20px; margin-top:16px;">
+      <div style="font-size:14px; color:#4ade80; font-weight:600; margin-bottom:8px;">Nullifier Formula</div>
+      <code style="font-size:14px; color:#ccc; background:#111; padding:8px 14px; border-radius:6px; display:block;">nullifier_hash = H(identity_secret, subject_id, epoch_id, domain_tag)</code>
+      <div style="font-size:12px; color:#666; margin-top:10px;">Deterministic within context. Unlinkable across subjects and epochs. Collision-resistant.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== VERIFICATION PIPELINE VIEW ==================== -->
+<div class="view" id="view-pipeline">
+  <div class="pipeline-container">
+    <p style="text-align:center;color:#888;font-size:14px;margin-bottom:24px;">Every review passes through this pipeline. Fail any step → rejected with a specific error code.</p>
+
+    <div class="pipeline-step">
+      <div class="pipeline-check">①</div>
+      <div class="pipeline-label">Validate proof bundle schema and version</div>
+      <div class="pipeline-fail">invalid_schema</div>
+    </div>
+    <div class="pipeline-arrow">↓</div>
+
+    <div class="pipeline-step">
+      <div class="pipeline-check">②</div>
+      <div class="pipeline-label">Verify subject cohort root exists and is active</div>
+      <div class="pipeline-fail">inactive_root</div>
+    </div>
+    <div class="pipeline-arrow">↓</div>
+
+    <div class="pipeline-step">
+      <div class="pipeline-check">③</div>
+      <div class="pipeline-label">Check cohort size ≥ k_min (default: 50)</div>
+      <div class="pipeline-fail">insufficient_anonymity_set</div>
+    </div>
+    <div class="pipeline-arrow">↓</div>
+
+    <div class="pipeline-step">
+      <div class="pipeline-check">④</div>
+      <div class="pipeline-label">Verify WoT membership proof against active root</div>
+      <div class="pipeline-fail">invalid_membership_proof</div>
+    </div>
+    <div class="pipeline-arrow">↓</div>
+
+    <div class="pipeline-step">
+      <div class="pipeline-check">⑤</div>
+      <div class="pipeline-label">Verify interaction receipt signature / proof</div>
+      <div class="pipeline-fail">invalid_interaction_proof</div>
+    </div>
+    <div class="pipeline-arrow">↓</div>
+
+    <div class="pipeline-step">
+      <div class="pipeline-check">⑥</div>
+      <div class="pipeline-label">Verify TimeBlind proof and enforce window policy</div>
+      <div class="pipeline-fail">invalid_timeblind_proof</div>
+    </div>
+    <div class="pipeline-arrow">↓</div>
+
+    <div class="pipeline-step">
+      <div class="pipeline-check">⑦</div>
+      <div class="pipeline-label">Check nullifier uniqueness in (subject_id, epoch_id)</div>
+      <div class="pipeline-fail">duplicate_nullifier</div>
+    </div>
+    <div class="pipeline-arrow">↓</div>
+
+    <div class="pipeline-step" style="border-color:#1a3a1a; background:#0d1a0d;">
+      <div class="pipeline-check" style="color:#4ade80;">✓</div>
+      <div class="pipeline-label" style="color:#4ade80; font-weight:600;">Review admitted and published with verification badges</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PRIVACY VIEW ==================== -->
+<div class="view" id="view-privacy">
+  <div class="privacy-container">
+    <p style="text-align:center;color:#888;font-size:14px;margin-bottom:24px;">Non-negotiable privacy rules baked into the system design.</p>
+
+    <div class="privacy-rule">
+      <div class="privacy-icon">⏰</div>
+      <div class="privacy-text">
+        <h4>TimeBlind is mandatory</h4>
+        <p>Exact interaction timestamps are never public. Reviews only prove the visit happened within a broad window (week or month). This prevents businesses from correlating review timing with transaction logs.</p>
+        <div class="privacy-value">Weekly or monthly windows only</div>
+      </div>
+    </div>
+
+    <div class="privacy-rule">
+      <div class="privacy-icon">👥</div>
+      <div class="privacy-text">
+        <h4>Minimum anonymity set (k_min)</h4>
+        <p>If fewer than k_min people are in the cohort for a business, reviews are suppressed entirely. You can't hide in a crowd of 3 — the system won't let you try.</p>
+        <div class="privacy-value">k_min = 50 (configurable, never below threshold)</div>
+      </div>
+    </div>
+
+    <div class="privacy-rule">
+      <div class="privacy-icon">💻</div>
+      <div class="privacy-text">
+        <h4>Local proving by default</h4>
+        <p>Your identity secret, Merkle path, receipt token, and timestamp never leave your device. The proof engine runs client-side. Remote proving is opt-in only, with an explicit trust warning.</p>
+        <div class="privacy-value">Secrets stay on-device</div>
+      </div>
+    </div>
+
+    <div class="privacy-rule">
+      <div class="privacy-icon">🔑</div>
+      <div class="privacy-text">
+        <h4>One-time posting keys</h4>
+        <p>Your persistent Nostr identity is never used to sign reviews. Each review gets a fresh throwaway key. There is no link between your WoT identity and your review activity.</p>
+        <div class="privacy-value">Derived per-review, used once</div>
+      </div>
+    </div>
+
+    <div class="privacy-rule">
+      <div class="privacy-icon">🚫</div>
+      <div class="privacy-text">
+        <h4>Unlinkable nullifiers</h4>
+        <p>Nullifiers prevent double-reviewing but reveal nothing about who you are. Different subjects and different epochs produce completely different nullifiers from the same person.</p>
+        <div class="privacy-value">Scoped to (subject, epoch) only</div>
+      </div>
+    </div>
+
+    <div class="privacy-rule">
+      <div class="privacy-icon">⏳</div>
+      <div class="privacy-text">
+        <h4>Delayed / bucketed publishing</h4>
+        <p>Reviews aren't published instantly. They're held and released in batches to prevent timing correlation between submission and publication.</p>
+        <div class="privacy-value">Batch publish windows</div>
+      </div>
+    </div>
+
+    <div class="privacy-rule">
+      <div class="privacy-icon">📋</div>
+      <div class="privacy-text">
+        <h4>Privacy-minimized logging</h4>
+        <p>Backend logs never store witness material or stable user identifiers. The system can't deanonymize you even if the logs are breached.</p>
+        <div class="privacy-value">No witness data in logs</div>
+      </div>
+    </div>
+
+    <div class="privacy-rule">
+      <div class="privacy-icon">🧾</div>
+      <div class="privacy-text">
+        <h4>Blind-signature receipts</h4>
+        <p>The business signs your receipt but the blinding process means they can't later match the receipt to the review. It's like a stamped concert ticket — proves attendance, not identity.</p>
+        <div class="privacy-value">Unlinkable by design (Cashu protocol)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+const details = {
+  'identity-client': {
+    title: '🔑 Identity Client',
+    body: `
+      <div class="detail-section">
+        <div class="detail-label">What it does</div>
+        <div class="detail-text">Manages your persistent Nostr keypair for WoT participation (following people, being followed). When you post a review, it derives a <strong>one-time throwaway posting key</strong> that's used to sign that single review and then discarded. Your real identity is never on a review.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Why it matters</div>
+        <div class="detail-text">This is the foundation of the anonymity model. Without it, your Nostr pubkey would be on every review, trivially linking all your reviews together and to your social graph. The one-time key breaks that chain completely.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Key property</div>
+        <div class="detail-text">There is <strong>no cryptographic link</strong> between your persistent identity and any posting key. Not even the system can connect them.</div>
+      </div>
+    `
+  },
+  'proof-engine': {
+    title: '⚡ Proof Engine',
+    body: `
+      <div class="detail-section">
+        <div class="detail-label">What it does</div>
+        <div class="detail-text">Runs on your device. Takes your private inputs (identity secret, Merkle path in cohort tree, receipt token, interaction timestamp) and produces a single ZK proof bundle asserting four statements simultaneously: membership, interaction, time-window, and uniqueness.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Proving stack</div>
+        <div class="detail-text">Semaphore/NullReview-style circuits for membership + nullifier. TimeBlind range proofs for time windows. Cashu receipt verification for interaction. Combined into one bundle with <code>proof_version</code> tag.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Local vs Remote</div>
+        <div class="detail-text">Local proving is default — your secrets never leave your machine. Remote proving is available as a fallback (for weaker devices) but requires explicit opt-in with a trust warning, because the remote prover would see your witness data.</div>
+      </div>
+    `
+  },
+  'web-ui': {
+    title: '🖥️ Web UI',
+    body: `
+      <div class="detail-section">
+        <div class="detail-label">Submission flow</div>
+        <div class="detail-text">Pick a business → write your review → attach your receipt → proof generation runs (with progress indicator) → submit. The UI handles key derivation and proof bundling transparently.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Feed page</div>
+        <div class="detail-text">Browse reviews for a business with verification badges (WoT-qualified, interaction-verified, anonymity-set size). Filter by trust distance (1st/2nd/3rd degree). Toggle between "all verified reviews" and "my network only."</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Privacy UX</div>
+        <div class="detail-text">Reviews below k_min are never shown individually. Exact timestamps are never displayed. Remote proving shows an explicit warning. The UI makes privacy guarantees visible and understandable.</div>
+      </div>
+    `
+  },
+  'wot-indexer': {
+    title: '🕸️ WoT Indexer',
+    body: `
+      <div class="detail-section">
+        <div class="detail-label">What it does</div>
+        <div class="detail-text">Ingests the Nostr follow graph and computes <strong>subject-relevant cohorts</strong> — for each business, who are the people within N degrees of connection that form the relevant trust network? The output is a set of public keys per subject.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">How cohorts work</div>
+        <div class="detail-text">When you look at reviews for "Blue Bottle on 5th," the WoT indexer has already computed the set of people connected to you (and other viewers) through the follow graph. This cohort defines who can leave trusted reviews for this subject.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Refresh policy</div>
+        <div class="detail-text">Cohorts rebuild daily or when significant graph changes occur. Deterministic — same input graph produces same cohort.</div>
+      </div>
+    `
+  },
+  'cohort-root': {
+    title: '🌳 Cohort Root Publisher',
+    body: `
+      <div class="detail-section">
+        <div class="detail-label">What it does</div>
+        <div class="detail-text">Takes the cohort set from the WoT indexer and builds a <strong>Merkle tree</strong>. Publishes the root hash plus metadata: cohort size, validity window, proof policy (k_min, allowed time windows).</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Why Merkle trees</div>
+        <div class="detail-text">The Merkle root is what makes ZK membership proofs possible. You can prove "my key is one of the leaves in this tree" by providing your leaf and the hash path to the root — without revealing which leaf you are.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">k_min enforcement</div>
+        <div class="detail-text">The published cohort size is how the system enforces the minimum anonymity set. If the tree has &lt; 50 leaves, the gateway rejects any proofs against it with <code>insufficient_anonymity_set</code>.</div>
+      </div>
+    `
+  },
+  'receipt': {
+    title: '🧾 Receipt Issuer / Verifier',
+    body: `
+      <div class="detail-section">
+        <div class="detail-label">Issuer side</div>
+        <div class="detail-text">When you transact with a business, it issues a <strong>Cashu blind-signature receipt</strong>. The "blind" part means the business signs something proving "a customer interacted with us" but the blinding process prevents them from later matching the receipt to the review.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Verifier side</div>
+        <div class="detail-text">When a review is submitted, the receipt verifier checks: is this receipt validly signed by an accepted issuer? Has it been tampered with? Is the issuer on the approved list? Valid receipts pass; forged or malformed ones are rejected.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Analogy</div>
+        <div class="detail-text">Like a stamped concert ticket. The stamp proves you were at the show. But the venue can't trace which specific stamp ended up on which review — the blinding process breaks that link.</div>
+      </div>
+    `
+  },
+  'review-gateway': {
+    title: '🛡️ Review Gateway',
+    body: `
+      <div class="detail-section">
+        <div class="detail-label">What it does</div>
+        <div class="detail-text">The single gatekeeper. Every review submission passes through a 7-step verification pipeline. Fail any step → rejected with a specific error code. Pass all steps → admitted and published.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Pipeline order</div>
+        <div class="detail-text">Schema validation → active root check → k_min threshold → membership proof → interaction receipt → TimeBlind proof → nullifier uniqueness. Order matters — cheap checks run first.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Reject codes</div>
+        <div class="detail-text"><code>invalid_schema</code>, <code>inactive_root</code>, <code>insufficient_anonymity_set</code>, <code>invalid_membership_proof</code>, <code>invalid_interaction_proof</code>, <code>invalid_timeblind_proof</code>, <code>duplicate_nullifier</code>, <code>unsupported_proof_version</code></div>
+      </div>
+    `
+  },
+  'review-feed': {
+    title: '📡 Review Feed API',
+    body: `
+      <div class="detail-section">
+        <div class="detail-label">Endpoints</div>
+        <div class="detail-text"><code>GET /v1/subjects/{id}/reviews</code> — returns admitted reviews with badges.<br><code>GET /v1/reviews/{id}/verification</code> — returns proof metadata for transparency.<br>Supports filters: <code>verified_only</code>, <code>max_distance</code>, <code>time_window_id</code>.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Trust-distance filtering</div>
+        <div class="detail-text">The killer feature. Set <code>max_distance=2</code> and you only see reviews from people within 2 hops of your follow graph. This is what turns a wall of stranger reviews into a curated trust-filtered signal.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Verification badges</div>
+        <div class="detail-text">Each review includes: <code>membership_verified</code>, <code>interaction_verified</code>, <code>timeblind_verified</code>, <code>nullifier_unique</code>, <code>k_threshold_met</code>.</div>
+      </div>
+    `
+  },
+  'nullifier-store': {
+    title: '🚫 Nullifier Store',
+    body: `
+      <div class="detail-section">
+        <div class="detail-label">What it does</div>
+        <div class="detail-text">A simple key-value store scoped to <code>(subject_id, epoch_id)</code>. When a review is submitted, the gateway computes the nullifier hash and checks if it already exists. If yes → <code>duplicate_nullifier</code> rejection. If no → store it and proceed.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">How nullifiers work</div>
+        <div class="detail-text"><code>nullifier = H(identity_secret, subject_id, epoch_id, domain_tag)</code><br>Same person + same business + same week = same hash (blocked). Same person + different business = different hash (allowed). Same person + same business + next week = different hash (allowed).</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Privacy property</div>
+        <div class="detail-text">The nullifier reveals nothing about the reviewer's identity. You can't reverse the hash to find the secret. You can't link nullifiers across different subjects or epochs.</div>
+      </div>
+    `
+  },
+  'data-tables': {
+    title: '🗄️ Data Tables',
+    body: `
+      <div class="detail-section">
+        <div class="detail-label">Schema</div>
+        <div class="detail-text">
+          <strong>roots</strong>: root_id, subject_id, root_hash, k_size, valid_from, valid_to<br>
+          <strong>reviews</strong>: review_id, subject_id, epoch_id, content_ref, proof_ref, created_at<br>
+          <strong>nullifiers</strong>: subject_id, epoch_id, nullifier_hash, first_seen_at<br>
+          <strong>receipts</strong> (optional cache): receipt_id, issuer_id, status, verified_at
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Privacy by design</div>
+        <div class="detail-text">No table contains persistent user identifiers. Reviews reference one-time posting keys. Nullifiers are opaque hashes. Logs are privacy-minimized. Even a full database breach cannot deanonymize reviewers.</div>
+      </div>
+    `
+  },
+  'nostr': {
+    title: '🌐 Nostr Network',
+    body: `
+      <div class="detail-section">
+        <div class="detail-label">Role in the system</div>
+        <div class="detail-text">Nostr provides three things: <strong>identity</strong> (keypairs), the <strong>follow graph</strong> (WoT source), and <strong>relay infrastructure</strong> for publishing/reading events. The WoT indexer reads Nostr follow events to build its cohort model.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Why Nostr</div>
+        <div class="detail-text">The follow graph is public, pseudonymous, directional (you follow people whose judgment you trust), and portable (not locked to a platform). This makes it ideal as a trust network source.</div>
+      </div>
+    `
+  },
+  'cashu': {
+    title: '🪙 Cashu / Blind Signatures',
+    body: `
+      <div class="detail-section">
+        <div class="detail-label">Role in the system</div>
+        <div class="detail-text">Cashu's blind signature protocol (BDHKE) is used for interaction receipts. The "blind" part means the signer (business) signs a value without seeing it — so they can verify the receipt is valid later but can't link it to the specific transaction.</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Why Cashu</div>
+        <div class="detail-text">Battle-tested privacy guarantees inherited from an existing digital cash system. The unlinkability between issuance and redemption is exactly the property needed for anonymous proof-of-interaction. No new cryptography required.</div>
+      </div>
+    `
+  }
+};
+
+function showDetail(key) {
+  const d = details[key];
+  document.getElementById('detail-title').innerHTML = d.title;
+  document.getElementById('detail-body').innerHTML = d.body;
+  document.getElementById('detail-panel').classList.add('visible');
+  document.querySelectorAll('.component').forEach(c => c.classList.remove('highlight'));
+  event.currentTarget.classList.add('highlight');
+}
+</script>
+
+</body>
+</html>

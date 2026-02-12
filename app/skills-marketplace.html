@@ -1,0 +1,2294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WoT Marketplace</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #f5f0e1;
+    --surface: #faf6eb;
+    --border: #d4c9b0;
+    --border-hover: #b8a88a;
+    --text: #3d3425;
+    --text-dim: #8a7e6a;
+    --text-bright: #1a1208;
+    --cyan: #b8620a;
+    --magenta: #9a4a0a;
+    --green: #2d6a1e;
+    --orange: #c47a0a;
+    --red: #b83a1a;
+    --purple: #6a4a2a;
+    --cyan-glow: 0 2px 8px rgba(184,98,10,0.15);
+    --magenta-glow: 0 2px 8px rgba(154,74,10,0.15);
+    --green-glow: 0 2px 8px rgba(45,106,30,0.15);
+    --pixel: 'Press Start 2P', monospace;
+    --mono: 'Space Mono', monospace;
+  }
+
+  body {
+    font-family: var(--mono);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Retro paper texture hint */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='4' height='4' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='4' height='4' fill='%23000' opacity='0.015'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #ece7d5; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 3px solid #3d3425;
+    padding: 20px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+  }
+  .logo {
+    font-family: var(--pixel);
+    font-size: 18px;
+    color: var(--cyan);
+    text-shadow: var(--cyan-glow);
+    white-space: nowrap;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: #c44a0a; text-shadow: none; }
+
+  /* SEARCH */
+  .search-box {
+    flex: 1;
+    max-width: 420px;
+    position: relative;
+  }
+  .search-box input {
+    width: 100%;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px 10px 36px;
+    color: var(--text-bright);
+    font-family: var(--mono);
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .search-box input:focus { border-color: #3d3425; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .search-box input::placeholder { color: var(--text-dim); }
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+
+  /* TOGGLE */
+  .toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 6px;
+  }
+  .toggle-btn {
+    font-family: var(--pixel);
+    font-size: 11px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s;
+    white-space: nowrap;
+  }
+  .toggle-btn.active-public {
+    background: var(--border);
+    color: var(--text-bright);
+  }
+  .toggle-btn.inactive {
+    background: transparent;
+    color: var(--text-dim);
+  }
+  .toggle-btn.inactive:hover { color: var(--text); }
+  .toggle-btn.active-wot {
+    background: #3d3425;
+    color: #faf6eb;
+    border: 1px solid #3d3425;
+    box-shadow: none;
+  }
+
+  /* TYPE TABS — Skills vs Connectors */
+  .type-tabs {
+    display: flex;
+    gap: 0;
+    max-width: 1400px;
+    margin: 20px auto 0;
+    padding: 0 24px;
+  }
+  .type-tab {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 24px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .type-tab:first-child { border-radius: 8px 0 0 8px; }
+  .type-tab:last-child { border-radius: 0 8px 8px 0; border-left: none; }
+  .type-tab.active {
+    background: #3d3425;
+    color: #faf6eb;
+    border-color: #3d3425;
+  }
+  .type-tab .tab-count {
+    font-size: 11px;
+    font-weight: 400;
+    opacity: 0.7;
+    margin-left: 6px;
+  }
+
+  /* CATEGORIES */
+  .categories {
+    display: flex;
+    gap: 8px;
+    max-width: 1400px;
+    margin: 14px auto 0;
+    padding: 0 24px;
+    flex-wrap: wrap;
+  }
+  .cat-pill {
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 8px 18px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+  .cat-pill:hover { border-color: var(--text-dim); color: var(--text); }
+  .cat-pill.active { border-color: #3d3425; color: #3d3425; background: rgba(61,52,37,0.08); font-weight: 700; }
+
+  /* GRID */
+  .main { max-width: 1400px; margin: 24px auto; padding: 0 24px 60px; }
+  .skill-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+  }
+
+  /* SKILL CARD */
+  .skill-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .skill-card:hover {
+    border-color: #3d3425;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.07);
+    transform: translateY(-1px);
+  }
+
+  /* Category bar at top of card */
+  .card-cat-bar {
+    padding: 6px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Card content area */
+  .card-content {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+  }
+
+  /* Title row: emoji + name */
+  .card-row-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-emoji {
+    font-size: 22px;
+    flex-shrink: 0;
+    width: 30px;
+    text-align: center;
+  }
+  .card-name {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-bright);
+    line-height: 1.3;
+  }
+
+  /* Row 2: description */
+  .card-desc {
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-dim);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Row 3: meta footer */
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .card-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .card-meta-item .val {
+    font-weight: 700;
+    color: var(--text);
+  }
+  .card-meta-stars {
+    color: var(--orange);
+    letter-spacing: -1px;
+    font-size: 13px;
+  }
+  .card-author-name {
+    margin-left: auto;
+    color: var(--text-dim);
+  }
+  .card-wot-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    color: #2d6a1e;
+    padding: 2px 7px;
+    background: rgba(45,106,30,0.08);
+    border: 1px solid rgba(45,106,30,0.2);
+    border-radius: 4px;
+    margin-left: auto;
+  }
+
+  /* DETAIL OVERLAY */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(61,52,37,0.6);
+    z-index: 200;
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 20px;
+    overflow-y: auto;
+  }
+  .overlay.visible { display: flex; }
+  .detail-panel {
+    background: var(--surface);
+    border: 3px solid #3d3425;
+    border-radius: 12px;
+    max-width: 800px;
+    width: 100%;
+    padding: 28px;
+    position: relative;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+  .close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 16px;
+    transition: all 0.25s;
+  }
+  .close-btn:hover { border-color: #3d3425; color: #3d3425; }
+
+  .detail-header { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 20px; }
+  .detail-avatar {
+    width: 56px;
+    height: 56px;
+    background: var(--bg);
+    border: 2px solid #3d3425;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+  }
+  .detail-title {
+    font-family: var(--pixel);
+    font-size: 16px;
+    color: var(--text-bright);
+    line-height: 1.6;
+    margin-bottom: 4px;
+  }
+  .detail-meta { font-size: 14px; color: var(--text-dim); }
+  .detail-meta strong { color: var(--text); }
+
+  .detail-desc {
+    font-size: 15px;
+    color: var(--text);
+    line-height: 1.7;
+    margin-bottom: 16px;
+    padding: 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .detail-install {
+    background: var(--bg);
+    border: 2px solid #2d6a1e;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: #2d6a1e;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: none;
+  }
+  .copy-btn {
+    font-family: var(--pixel);
+    font-size: 10px;
+    padding: 8px 14px;
+    background: rgba(45,106,30,0.1);
+    border: 1px solid #2d6a1e;
+    border-radius: 4px;
+    color: #2d6a1e;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover { background: rgba(45,106,30,0.2); }
+
+  .detail-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .stat-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+  }
+  .stat-value {
+    font-family: var(--pixel);
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+  .stat-label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* REVIEWS SECTION */
+  .reviews-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border);
+  }
+  .reviews-title {
+    font-family: var(--pixel);
+    font-size: 13px;
+    color: var(--text-bright);
+  }
+  .review-mode-label {
+    font-size: 13px;
+    padding: 5px 14px;
+    border-radius: 6px;
+  }
+  .mode-public { background: rgba(196,122,10,0.1); color: #8a6a1a; border: 1px solid rgba(196,122,10,0.3); }
+  .mode-wot { background: rgba(45,106,30,0.1); color: #2d6a1e; border: 1px solid rgba(45,106,30,0.3); }
+
+  /* REVIEW CARD */
+  .review-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 10px;
+    transition: all 0.3s;
+  }
+  .review-card.wot-verified {
+    border-color: rgba(45,106,30,0.3);
+    background: rgba(45,106,30,0.03);
+  }
+  .review-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .review-author { display: flex; align-items: center; gap: 8px; }
+  .review-author-name { font-size: 14px; color: var(--text); font-weight: 700; }
+  .review-author-anon {
+    font-size: 13px;
+    color: var(--purple);
+    font-family: var(--mono);
+  }
+  .review-stars { color: var(--orange); font-size: 15px; letter-spacing: 1px; }
+  .review-content {
+    font-size: 15px;
+    color: var(--text);
+    line-height: 1.7;
+    margin-bottom: 10px;
+  }
+  .review-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .review-date { font-size: 13px; color: var(--text-dim); }
+
+  /* VERIFICATION BADGES */
+  .proof-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .proof-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--mono);
+    position: relative;
+    cursor: help;
+  }
+  .proof-badge .tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #3d3425;
+    color: #faf6eb;
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 8px 12px;
+    border-radius: 6px;
+    white-space: normal;
+    width: 240px;
+    text-align: left;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    pointer-events: none;
+  }
+  .proof-badge .tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #3d3425;
+  }
+  .proof-badge:hover .tooltip { display: block; }
+  .badge-wot { background: rgba(45,106,30,0.1); color: #2d6a1e; border: 1px solid rgba(45,106,30,0.25); }
+  .badge-interaction { background: rgba(45,106,30,0.08); color: #3a7a2a; border: 1px solid rgba(45,106,30,0.2); }
+  .badge-timeblind { background: rgba(106,74,42,0.1); color: #6a4a2a; border: 1px solid rgba(106,74,42,0.25); }
+  .badge-nullifier { background: rgba(184,98,10,0.08); color: #8a5a0a; border: 1px solid rgba(184,98,10,0.2); }
+  .badge-anon-set { background: rgba(61,52,37,0.08); color: #5c4a2a; border: 1px solid rgba(61,52,37,0.2); }
+  .badge-distance { background: rgba(45,106,30,0.05); color: #2d6a1e; border: 1px solid rgba(45,106,30,0.15); }
+
+  .trust-distance-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .td-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .td-dot.active { background: #2d6a1e; box-shadow: none; }
+  .td-dot.dim { background: var(--border); }
+
+  /* SUSPICIOUS REVIEW INDICATOR (public mode) */
+  .review-card.suspicious {
+    border-color: rgba(184,58,26,0.2);
+    background: rgba(184,58,26,0.03);
+  }
+  .suspicious-tag {
+    font-size: 11px;
+    padding: 3px 10px;
+    background: rgba(184,58,26,0.08);
+    color: #b83a1a;
+    border: 1px solid rgba(184,58,26,0.2);
+    border-radius: 4px;
+  }
+
+  /* CATEGORY COLORS — Skills */
+  .cat-documents { color: #6a4a2a; border-color: #b8a070; background: rgba(184,160,112,0.1); }
+  .cat-frontend { color: #2a5a4a; border-color: #5a9a8a; background: rgba(90,154,138,0.1); }
+  .cat-development { color: #4a3a7a; border-color: #8a7aaa; background: rgba(138,122,170,0.1); }
+  .cat-testing { color: #8a5a0a; border-color: #c4a050; background: rgba(196,160,80,0.1); }
+  .cat-security { color: #8a2a1a; border-color: #ca6a50; background: rgba(202,106,80,0.1); }
+  .cat-devops { color: #2d6a1e; border-color: #6aaa50; background: rgba(106,170,80,0.1); }
+  .cat-data { color: #4a3a7a; border-color: #8a7aaa; background: rgba(138,122,170,0.1); }
+  .cat-workflow { color: #7a3a2a; border-color: #ba7a60; background: rgba(186,122,96,0.1); }
+  /* CATEGORY COLORS — Connectors */
+  .cat-communication { color: #2a5a7a; border-color: #5a8aba; background: rgba(90,138,186,0.1); }
+  .cat-developer-tools { color: #4a3a7a; border-color: #8a7aaa; background: rgba(138,122,170,0.1); }
+  .cat-databases { color: #1a6a5a; border-color: #4aaa8a; background: rgba(74,170,138,0.1); }
+  .cat-cloud { color: #5a4a0a; border-color: #aaa040; background: rgba(170,160,64,0.1); }
+  .cat-search { color: #7a3a5a; border-color: #ba6a9a; background: rgba(186,106,154,0.1); }
+  .cat-productivity { color: #3a5a2a; border-color: #6a9a5a; background: rgba(106,154,90,0.1); }
+  .cat-finance { color: #6a5a1a; border-color: #baa040; background: rgba(186,160,64,0.1); }
+  .cat-ai-ml { color: #5a2a6a; border-color: #9a5aba; background: rgba(154,90,186,0.1); }
+  .cat-monitoring { color: #8a2a1a; border-color: #ca6a50; background: rgba(202,106,80,0.1); }
+  .cat-storage { color: #2a4a6a; border-color: #5a8aaa; background: rgba(90,138,170,0.1); }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state h3 { font-family: var(--pixel); font-size: 12px; color: var(--text); margin-bottom: 8px; }
+  .empty-state p { font-size: 13px; }
+
+  /* WOT SHIELD INDICATOR — slim inline */
+  .wot-banner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: none;
+  }
+  .wot-banner.visible { display: block; }
+  .wot-banner-inner {
+    background: rgba(45,106,30,0.06);
+    border: 1px solid rgba(45,106,30,0.2);
+    border-radius: 6px;
+    padding: 6px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: #2d6a1e;
+  }
+
+  /* TOOLBAR — sort + filter controls between categories and grid */
+  .toolbar {
+    max-width: 1400px;
+    margin: 14px auto 0;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sort-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .sort-btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .sort-btn:hover { border-color: var(--text-dim); color: var(--text); }
+  .sort-btn.active { background: #3d3425; color: #faf6eb; border-color: #3d3425; }
+  .sort-btn .arrow { font-size: 10px; margin-left: 3px; }
+  .toolbar-count {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* NPUB INPUT MODAL */
+  .npub-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(61,52,37,0.5);
+    z-index: 300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .npub-modal.visible { display: flex; }
+  .npub-modal-box {
+    background: var(--surface);
+    border: 2px solid #3d3425;
+    border-radius: 12px;
+    padding: 28px;
+    max-width: 480px;
+    width: 100%;
+    animation: slideUp 0.25s ease;
+  }
+  .npub-modal-title {
+    font-family: var(--pixel);
+    font-size: 13px;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+  }
+  .npub-modal-desc {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+  .npub-input {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 10px 14px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text-bright);
+    outline: none;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+  .npub-input:focus { border-color: #3d3425; }
+  .npub-input::placeholder { color: var(--text-dim); }
+  .npub-btn-row {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+  .npub-btn {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1.5px solid;
+  }
+  .npub-btn-cancel {
+    background: transparent;
+    color: var(--text-dim);
+    border-color: var(--border);
+  }
+  .npub-btn-cancel:hover { border-color: var(--text-dim); color: var(--text); }
+  .npub-btn-confirm {
+    background: #2d6a1e;
+    color: #fff;
+    border-color: #2d6a1e;
+  }
+  .npub-btn-confirm:hover { background: #246a18; }
+
+  /* NPUB indicator in header */
+  /* SIGN IN BUTTON */
+  .sign-in-btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 16px;
+    background: #3d3425;
+    color: #faf6eb;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .sign-in-btn:hover { background: #2a2418; }
+  .sign-in-btn.hidden { display: none; }
+
+  .npub-indicator {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #2d6a1e;
+    padding: 4px 10px;
+    background: rgba(45,106,30,0.06);
+    border: 1px solid rgba(45,106,30,0.2);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .npub-indicator.visible { display: inline-flex; }
+  .npub-indicator:hover { border-color: rgba(45,106,30,0.4); }
+
+  /* REVIEW FORM */
+  .review-form {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border);
+  }
+  .review-form-title {
+    font-family: var(--pixel);
+    font-size: 12px;
+    color: var(--text-bright);
+    margin-bottom: 14px;
+  }
+  .review-form-stars {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  .review-form-stars .star-btn {
+    font-size: 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--border);
+    transition: color 0.15s;
+    padding: 0 2px;
+  }
+  .review-form-stars .star-btn.active { color: var(--orange); }
+  .review-form-stars .star-btn:hover { color: var(--orange); }
+  .review-textarea {
+    width: 100%;
+    min-height: 80px;
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 12px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text-bright);
+    resize: vertical;
+    outline: none;
+    margin-bottom: 14px;
+    transition: border-color 0.2s;
+  }
+  .review-textarea:focus { border-color: #3d3425; }
+  .review-textarea::placeholder { color: var(--text-dim); }
+  .review-submit-btn {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 28px;
+    background: #3d3425;
+    color: #faf6eb;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .review-submit-btn:hover { background: #2a2418; }
+  .review-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* VERIFICATION STEPPER */
+  .verify-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(61,52,37,0.7);
+    z-index: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .verify-box {
+    background: var(--surface);
+    border: 2px solid #3d3425;
+    border-radius: 14px;
+    padding: 32px 36px;
+    max-width: 440px;
+    width: 100%;
+    animation: slideUp 0.3s ease;
+  }
+  .verify-title {
+    font-family: var(--pixel);
+    font-size: 13px;
+    color: var(--text-bright);
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .verify-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .verify-step {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    position: relative;
+  }
+  .verify-step:not(:last-child) { border-bottom: 1px solid var(--border); }
+  .verify-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: all 0.4s;
+    background: var(--bg);
+    color: var(--border);
+  }
+  .verify-circle.active {
+    border-color: var(--orange);
+    color: var(--orange);
+    background: rgba(196,122,10,0.08);
+    animation: pulse 0.8s ease infinite;
+  }
+  .verify-circle.done {
+    border-color: #2d6a1e;
+    background: #2d6a1e;
+    color: #fff;
+    animation: none;
+  }
+  .verify-circle.fail {
+    border-color: #b83a1a;
+    background: #b83a1a;
+    color: #fff;
+    animation: none;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(196,122,10,0.3); }
+    50% { box-shadow: 0 0 0 8px rgba(196,122,10,0); }
+  }
+  .verify-step-info { flex: 1; }
+  .verify-step-label {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-dim);
+    transition: color 0.3s;
+  }
+  .verify-step.running .verify-step-label,
+  .verify-step.done .verify-step-label { color: var(--text-bright); }
+  .verify-step-desc {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    opacity: 0.7;
+  }
+  .verify-status {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+    min-width: 60px;
+    text-align: right;
+    transition: color 0.3s;
+  }
+  .verify-step.done .verify-status { color: #2d6a1e; }
+  .verify-step.fail .verify-status { color: #b83a1a; }
+  .verify-result {
+    text-align: center;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border);
+  }
+  .verify-result-msg {
+    font-family: var(--pixel);
+    font-size: 12px;
+    margin-bottom: 14px;
+  }
+  .verify-result-msg.success { color: #2d6a1e; }
+  .verify-result-msg.rejected { color: #b83a1a; }
+  .verify-close-btn {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 24px;
+    background: #3d3425;
+    color: #faf6eb;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .verify-close-btn:hover { background: #2a2418; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 40px 20px;
+    border-top: 2px solid var(--border);
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .footer p { font-size: 13px; color: var(--text-dim); }
+  .footer .nostr-badge {
+    font-family: var(--pixel);
+    font-size: 11px;
+    color: #8a5a0a;
+    margin-top: 8px;
+    display: inline-block;
+  }
+
+  @media (max-width: 600px) {
+    .header-top { flex-direction: column; align-items: stretch; }
+    .search-box { max-width: 100%; }
+    .skill-grid { grid-template-columns: 1fr; }
+    .toggle-btn { font-size: 10px; padding: 8px 14px; }
+    .card-meta { flex-wrap: wrap; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-top">
+    <div class="logo">WoT <span>Market</span></div>
+    <div class="search-box">
+      <span class="search-icon">&#x1F50D;</span>
+      <input type="text" id="searchInput" placeholder="Search skills &amp; connectors..." oninput="filterItems()">
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="toggle-container">
+        <button class="toggle-btn active-public" id="btnPublic" onclick="setMode('public')">ALL REVIEWS</button>
+        <button class="toggle-btn inactive" id="btnWot" onclick="setMode('wot')">WOT SHIELD</button>
+      </div>
+      <button class="sign-in-btn" id="signInBtn" onclick="showNpubModal()">&#x1F511; Sign In</button>
+      <span class="npub-indicator" id="npubIndicator" onclick="showNpubModal()" title="Click to change your Nostr identity"></span>
+    </div>
+  </div>
+</header>
+
+<div class="npub-modal" id="npubModal" onclick="if(event.target===this)closeNpubModal()">
+  <div class="npub-modal-box">
+    <div class="npub-modal-title">&#x1F511; Sign In With Nostr</div>
+    <div class="npub-modal-desc">Enter your private key to sign reviews and build your Web of Trust. Your key never leaves your device — all signing happens locally.</div>
+    <input class="npub-input" id="nsecInput" type="password" placeholder="nsec1..." autocomplete="off" spellcheck="false">
+    <div id="derivedPubkey" style="font-family:var(--mono);font-size:12px;color:#2d6a1e;margin:-8px 0 14px;display:none;"></div>
+    <div class="npub-btn-row">
+      <button class="npub-btn npub-btn-cancel" onclick="closeNpubModal()">Cancel</button>
+      <button class="npub-btn npub-btn-confirm" onclick="confirmNpub()">Sign In</button>
+    </div>
+  </div>
+</div>
+
+<div class="type-tabs" id="typeTabs"></div>
+<div class="categories" id="categories"></div>
+<div class="toolbar">
+  <div class="toolbar-left">
+    <span class="sort-label">Sort:</span>
+    <div id="sortButtons"></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="wot-banner" id="wotBanner">
+      <div class="wot-banner-inner">&#x1F6E1; WoT Shield — anonymous verified reviews only</div>
+    </div>
+    <span class="toolbar-count" id="resultCount"></span>
+  </div>
+</div>
+<div class="main"><div class="skill-grid" id="skillGrid"></div></div>
+
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeDetail()">
+  <div class="detail-panel" id="detailPanel"></div>
+</div>
+
+<footer class="footer">
+  <p>Skills &amp; connector data structured for Nostr event compatibility (NIP-89 / NIP-90)</p>
+  <div class="nostr-badge">POWERED BY NOSTR + ZK PROOFS</div>
+</footer>
+
+<script>
+// ============================================================
+// NOSTR-READY DATA STRUCTURES
+// All data uses Nostr-compatible schema patterns.
+// Skills: kind 31990 (handler recommendation, NIP-89 style)
+// Reviews: custom kind with proof_bundle metadata
+// ============================================================
+
+const SKILL_CATEGORIES = ['All', 'Documents', 'Frontend', 'Development', 'Testing', 'Security', 'DevOps', 'Data & ML', 'Workflow'];
+const CONNECTOR_CATEGORIES = ['All', 'Communication', 'Developer Tools', 'Databases', 'Cloud', 'Search', 'Productivity', 'Finance', 'AI & ML', 'Monitoring', 'Storage'];
+const CAT_CLASSES = {
+  Documents:'cat-documents', Frontend:'cat-frontend', Development:'cat-development', Testing:'cat-testing', Security:'cat-security', DevOps:'cat-devops', 'Data & ML':'cat-data', Workflow:'cat-workflow',
+  Communication:'cat-communication', 'Developer Tools':'cat-developer-tools', Databases:'cat-databases', Cloud:'cat-cloud', Search:'cat-search', Productivity:'cat-productivity', Finance:'cat-finance', 'AI & ML':'cat-ai-ml', Monitoring:'cat-monitoring', Storage:'cat-storage'
+};
+
+const SKILLS = [
+  {
+    id: "anthropic_docx",
+    skillUrl: "https://github.com/anthropics/skills/blob/main/skills/docx/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1anthropic000000000000000000000000000001", created_at: 1735689600 },
+    name: "Word Document Handler",
+    emoji: "&#x1F4C4;",
+    description: "Comprehensive Microsoft Word (.docx) creation, editing, and analysis with tracked changes, comments, formatting preservation, and text extraction.",
+    author: { npub: "npub1anthropic000000000000000000000000000001", name: "anthropic" },
+    category: "Documents",
+    installCmd: "npx openskills install anthropics/skills/docx",
+    version: "1.0.0",
+    downloads: 48200,
+    publicReviews: [
+      { author: "PM_Sarah", rating: 5, content: "This is the gold standard for doc generation. Professional formatting, headers, tables of contents — it does it all.", date: "2026-02-10", suspicious: false },
+      { author: "DocWriter99", rating: 5, content: "INCREDIBLE!!! Best document skill EVER!! Must install immediately!!!", date: "2026-02-08", suspicious: true },
+      { author: "legal_team", rating: 4, content: "Solid for contract drafts. Tracked changes work well. Wish it handled footnotes more gracefully.", date: "2026-02-05", suspicious: false },
+      { author: "freelancer_j", rating: 4, content: "Great for client deliverables. The formatting preservation when editing existing docs is impressive.", date: "2026-02-02", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "a1b2..c3d4", rating: 5, content: "Used this daily for 2 months generating client reports. Formatting is consistent and professional. Table of contents auto-generation is reliable. Handles complex nested styles correctly.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 312 }},
+      { anonId: "e5f6..g7h8", rating: 4, content: "Best docx skill available. Only limitation is footnote handling in multi-section documents. Everything else is production-grade.", date: "W05-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 312 }}
+    ]
+  },
+  {
+    id: "anthropic_pdf", skillUrl: "https://github.com/anthropics/skills/blob/main/skills/pdf/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1anthropic000000000000000000000000000001", created_at: 1735689600 },
+    name: "PDF Processing", emoji: "&#x1F4D1;",
+    description: "Comprehensive PDF toolkit for extracting text and tables, creating new PDFs, merging/splitting documents, watermarking, and handling forms.",
+    author: { npub: "npub1anthropic000000000000000000000000000001", name: "anthropic" },
+    category: "Documents", installCmd: "npx openskills install anthropics/skills/pdf", version: "1.0.0", downloads: 41500,
+    publicReviews: [
+      { author: "DataAnalyst", rating: 5, content: "Handles messy scanned PDFs better than anything I've tried. Table extraction is a game changer.", date: "2026-02-09", suspicious: false },
+      { author: "PDF_Master", rating: 5, content: "AMAZING!! Best PDF tool ever created!!! 10/10!!!", date: "2026-02-06", suspicious: true },
+      { author: "ops_manager", rating: 4, content: "Merge and split work great. OCR is solid but slow on large docs.", date: "2026-02-03", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "i9j0..k1l2", rating: 4, content: "Reliable PDF manipulation. Merge/split is flawless. Text extraction handles multi-column layouts well. OCR accuracy is good but processing time scales linearly with page count.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 287 }},
+      { anonId: "m3n4..o5p6", rating: 5, content: "Production-grade PDF handling. Form filling works reliably. Watermarking maintains quality. Best open skill for PDF work.", date: "W05-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 287 }}
+    ]
+  },
+  {
+    id: "anthropic_pptx", skillUrl: "https://github.com/anthropics/skills/blob/main/skills/pptx/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1anthropic000000000000000000000000000001", created_at: 1735689600 },
+    name: "PowerPoint Suite", emoji: "&#x1F4CA;",
+    description: "Create, edit, and analyze Microsoft PowerPoint (.pptx) presentations with professional layouts, charts, and speaker notes.",
+    author: { npub: "npub1anthropic000000000000000000000000000001", name: "anthropic" },
+    category: "Documents", installCmd: "npx openskills install anthropics/skills/pptx", version: "1.0.0", downloads: 35800,
+    publicReviews: [
+      { author: "ConsultantMike", rating: 5, content: "Produces client-ready decks. The slide layouts are professional and clean.", date: "2026-02-10", suspicious: false },
+      { author: "SlidesExpert", rating: 5, content: "Best presentation maker EVER!! Will blow your mind!!!", date: "2026-02-07", suspicious: true },
+      { author: "marketing_vp", rating: 4, content: "Great for investor decks. Wish it had more chart customization options.", date: "2026-02-04", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "q7r8..s9t0", rating: 4, content: "Consistent, professional output. Speaker notes are well-structured. Chart integration works but defaults are basic. Template system is flexible.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 245 }}
+    ]
+  },
+  {
+    id: "anthropic_frontend", skillUrl: "https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1anthropic000000000000000000000000000001", created_at: 1735689600 },
+    name: "Frontend Design", emoji: "&#x1F3A8;",
+    description: "Create distinctive, production-grade frontend interfaces that avoid generic AI aesthetics. Emphasis on real design quality.",
+    author: { npub: "npub1anthropic000000000000000000000000000001", name: "anthropic" },
+    category: "Frontend", installCmd: "npx openskills install anthropics/skills/frontend-design", version: "1.0.0", downloads: 52100,
+    publicReviews: [
+      { author: "ui_designer", rating: 5, content: "Finally, AI-generated UIs that don't look like AI slop. The design philosophy behind this is solid.", date: "2026-02-10", suspicious: false },
+      { author: "FrontendGuru99", rating: 5, content: "REVOLUTIONARY!! Every frontend dev needs this IMMEDIATELY!!!", date: "2026-02-08", suspicious: true },
+      { author: "indie_dev", rating: 4, content: "Great for MVPs. The color and typography choices are tasteful. Responsive by default.", date: "2026-02-05", suspicious: false },
+      { author: "design_lead", rating: 4, content: "Noticeably better output than default Claude. Still needs human polish for production but excellent starting point.", date: "2026-02-02", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "u1v2..w3x4", rating: 4, content: "Meaningfully improves UI output quality. Typography choices are intentional, not random. Color palettes are cohesive. Still produces some generic patterns but far fewer than without it.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 340 }},
+      { anonId: "y5z6..a7b8", rating: 5, content: "Best frontend skill available. Used it for 6 client projects. Clients consistently say the designs look professional. Saves significant design iteration time.", date: "W05-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 340 }}
+    ]
+  },
+  {
+    id: "anthropic_mcp", skillUrl: "https://github.com/anthropics/skills/blob/main/skills/mcp-builder/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1anthropic000000000000000000000000000001", created_at: 1735689600 },
+    name: "MCP Server Builder", emoji: "&#x1F527;",
+    description: "Generate high-quality Model Context Protocol servers to integrate external APIs and services with AI agents.",
+    author: { npub: "npub1anthropic000000000000000000000000000001", name: "anthropic" },
+    category: "Development", installCmd: "npx openskills install anthropics/skills/mcp-builder", version: "1.0.0", downloads: 28700,
+    publicReviews: [
+      { author: "mcp_dev", rating: 5, content: "Scaffolds a working MCP server in minutes. The generated code follows best practices.", date: "2026-02-09", suspicious: false },
+      { author: "AgentBuilder", rating: 4, content: "Good for standard integrations. Complex auth flows still need manual work.", date: "2026-02-05", suspicious: false },
+      { author: "MCPFan2026", rating: 5, content: "BEST TOOL EVER!! Creates perfect MCP servers every time!!!", date: "2026-02-03", suspicious: true }
+    ],
+    wotReviews: [
+      { anonId: "c9d0..e1f2", rating: 4, content: "Reliable scaffolding for MCP servers. Generated code follows the spec correctly. Error handling patterns are solid. OAuth flows need manual refinement.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 198 }},
+      { anonId: "g3h4..i5j6", rating: 4, content: "Saves hours on MCP server boilerplate. Tool definitions are well-structured. Resource endpoints follow conventions. Good starting point that gets you 80% there.", date: "W05-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 198 }}
+    ]
+  },
+  {
+    id: "anthropic_webapp_testing", skillUrl: "https://github.com/anthropics/skills/blob/main/skills/webapp-testing/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1anthropic000000000000000000000000000001", created_at: 1735689600 },
+    name: "Web App Testing", emoji: "&#x1F9EA;",
+    description: "Test local web applications using Playwright for UI verification, screenshot debugging, and quality assurance automation.",
+    author: { npub: "npub1anthropic000000000000000000000000000001", name: "anthropic" },
+    category: "Testing", installCmd: "npx openskills install anthropics/skills/webapp-testing", version: "1.0.0", downloads: 19400,
+    publicReviews: [
+      { author: "qa_lead", rating: 5, content: "Transforms Claude into a real QA engineer. Screenshot-based debugging catches visual regressions.", date: "2026-02-09", suspicious: false },
+      { author: "test_bot", rating: 4, content: "Good for smoke tests. Playwright integration is smooth. Needs better assertion templates.", date: "2026-02-06", suspicious: false },
+      { author: "TestMaster2026", rating: 5, content: "PERFECT testing tool!! Finds ALL bugs instantly!!!", date: "2026-02-02", suspicious: true }
+    ],
+    wotReviews: [
+      { anonId: "k7l8..m9n0", rating: 4, content: "Solid Playwright integration. Screenshot comparison catches layout issues other tests miss. Test generation is contextually aware. Setup time is minimal.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 156 }}
+    ]
+  },
+  {
+    id: "vercel_react", skillUrl: "https://github.com/vercel-labs/agent-skills/blob/main/skills/react-best-practices/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1vercel0000000000000000000000000000000001", created_at: 1736294400 },
+    name: "React Best Practices", emoji: "&#x269B;",
+    description: "React and Next.js performance optimization guidelines with 40+ rules across 8 categories prioritized by impact.",
+    author: { npub: "npub1vercel0000000000000000000000000000000001", name: "vercel-labs" },
+    category: "Frontend", installCmd: "npx skills add vercel-labs/agent-skills/react-best-practices", version: "1.0.0", downloads: 44300,
+    publicReviews: [
+      { author: "react_daily", rating: 5, content: "Measurably improved our bundle size. The memoization rules alone saved us from 3 perf issues.", date: "2026-02-10", suspicious: false },
+      { author: "NextJSFanboy", rating: 5, content: "MUST HAVE for every React developer!! 100% essential!!!", date: "2026-02-07", suspicious: true },
+      { author: "perf_eng", rating: 4, content: "Well-curated rules. The impact prioritization is helpful for triaging what to fix first.", date: "2026-02-04", suspicious: false },
+      { author: "sr_frontend", rating: 4, content: "Good guardrails. Catches common Next.js anti-patterns. Some rules are opinionated but the defaults are sensible.", date: "2026-01-30", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "o1p2..q3r4", rating: 5, content: "Best React practices skill. The 40+ rules are well-prioritized by real-world impact. Catches Server Component vs Client Component misuse reliably. Measurably improved our Lighthouse scores.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 267 }},
+      { anonId: "s5t6..u7v8", rating: 4, content: "Excellent for teams. Enforces consistent patterns across PRs. The performance rules are well-researched. A few rules are overly strict for small projects but easy to override.", date: "W05-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 267 }}
+    ]
+  },
+  {
+    id: "vercel_deploy", skillUrl: "https://github.com/vercel-labs/agent-skills/blob/main/skills/claude.ai/vercel-deploy-claimable/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1vercel0000000000000000000000000000000001", created_at: 1736294400 },
+    name: "Vercel Deploy", emoji: "&#x1F680;",
+    description: "Deploy applications to Vercel instantly with framework auto-detection and claimable deployment links.",
+    author: { npub: "npub1vercel0000000000000000000000000000000001", name: "vercel-labs" },
+    category: "DevOps", installCmd: "npx skills add vercel-labs/agent-skills/vercel-deploy", version: "1.0.0", downloads: 31200,
+    publicReviews: [
+      { author: "ship_it", rating: 5, content: "One command and it's live. Framework detection is solid for Next.js and Vite.", date: "2026-02-10", suspicious: false },
+      { author: "DeployKing", rating: 5, content: "INCREDIBLE deployment skill!! Works like MAGIC!!!", date: "2026-02-06", suspicious: true },
+      { author: "indie_hacker", rating: 4, content: "Great for quick prototypes. Claimable links are clever. Needs better env var handling.", date: "2026-02-03", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "w9x0..y1z2", rating: 4, content: "Streamlined deployment flow. Framework detection works for major frameworks. Environment variable handling needs improvement for complex setups. Claimable links are a nice UX touch.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 213 }}
+    ]
+  },
+  {
+    id: "hf_model_trainer", skillUrl: "https://github.com/huggingface/skills/blob/main/skills/hugging-face-model-trainer/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1huggingface00000000000000000000000000001", created_at: 1736899200 },
+    name: "HF Model Trainer", emoji: "&#x1F9E0;",
+    description: "Train and fine-tune language models using TRL with SFT, DPO, GRPO, and GGUF conversion methods on Hugging Face infrastructure.",
+    author: { npub: "npub1huggingface00000000000000000000000000001", name: "huggingface" },
+    category: "Data & ML", installCmd: "npx openskills install huggingface/skills/hugging-face-model-trainer", version: "1.0.0", downloads: 22800,
+    publicReviews: [
+      { author: "ml_researcher", rating: 5, content: "Best fine-tuning workflow I've seen. SFT and DPO setup is clean. GGUF conversion is a nice bonus.", date: "2026-02-09", suspicious: false },
+      { author: "AITrainer_Pro", rating: 5, content: "REVOLUTIONARY!! Train any model perfectly every time!!!", date: "2026-02-05", suspicious: true },
+      { author: "phd_student", rating: 4, content: "Good for standard fine-tuning. Advanced hyperparameter tuning could be more flexible.", date: "2026-02-02", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "a3b4..c5d6", rating: 4, content: "Comprehensive training pipeline. TRL integration is well-implemented. SFT works out of the box. DPO needs careful dataset prep but the skill handles the training loop correctly.", date: "W06-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 134 }},
+      { anonId: "e7f8..g9h0", rating: 4, content: "Good for researchers who want agent-assisted fine-tuning. GRPO support is a differentiator. GGUF conversion works for Llama-family models.", date: "W05-2026", distance: 3, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 134 }}
+    ]
+  },
+  {
+    id: "hf_datasets", skillUrl: "https://github.com/huggingface/skills/blob/main/skills/hugging-face-datasets/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1huggingface00000000000000000000000000001", created_at: 1736899200 },
+    name: "HF Datasets", emoji: "&#x1F4BE;",
+    description: "Create and manage datasets on Hugging Face Hub with SQL transformations, streaming updates, and version control.",
+    author: { npub: "npub1huggingface00000000000000000000000000001", name: "huggingface" },
+    category: "Data & ML", installCmd: "npx openskills install huggingface/skills/hugging-face-datasets", version: "1.0.0", downloads: 18600,
+    publicReviews: [
+      { author: "data_curator", rating: 4, content: "SQL transformations on HF datasets are incredibly useful. Streaming upload handles large datasets well.", date: "2026-02-08", suspicious: false },
+      { author: "DatasetHero", rating: 5, content: "BEST dataset tool!! Makes data work EFFORTLESS!!!", date: "2026-02-04", suspicious: true },
+      { author: "nlp_eng", rating: 4, content: "Good versioning. Parquet conversion is smooth. Wish it handled more file formats natively.", date: "2026-02-01", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "i1j2..k3l4", rating: 4, content: "Solid dataset management skill. SQL transformations are powerful for filtering and reshaping. Version control integration works correctly. Upload reliability is good even for multi-GB datasets.", date: "W06-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 108 }}
+    ]
+  },
+  {
+    id: "supabase_postgres", skillUrl: "https://github.com/supabase/agent-skills/blob/main/skills/supabase-postgres-best-practices/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1supabase00000000000000000000000000000001", created_at: 1737504000 },
+    name: "Supabase Postgres", emoji: "&#x1F5C4;",
+    description: "Postgres performance optimization covering query tuning, indexing, schema design, RLS policies, and connection pooling.",
+    author: { npub: "npub1supabase00000000000000000000000000000001", name: "supabase" },
+    category: "Development", installCmd: "npx openskills install supabase/agent-skills/supabase-postgres-best-practices", version: "1.0.0", downloads: 26400,
+    publicReviews: [
+      { author: "dba_pro", rating: 5, content: "Caught 3 missing indexes that were killing our query performance. RLS policy guidance is invaluable.", date: "2026-02-10", suspicious: false },
+      { author: "PostgresGuru", rating: 5, content: "INCREDIBLE!! Makes Postgres easy for everyone!!!", date: "2026-02-06", suspicious: true },
+      { author: "backend_dev", rating: 4, content: "Good defaults. The connection pooling guidance saved us from a production incident.", date: "2026-02-03", suspicious: false },
+      { author: "startup_cto", rating: 5, content: "Essential for any Supabase project. Schema design recommendations are battle-tested.", date: "2026-01-29", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "m5n6..o7p8", rating: 5, content: "Excellent Postgres skill. Index recommendations are based on actual query patterns. RLS guidance prevents common security mistakes. Connection pooling advice is production-tested.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 187 }},
+      { anonId: "q9r0..s1t2", rating: 4, content: "Strong fundamentals. Query optimization suggestions are actionable. Schema design patterns are well-chosen. Some advanced partitioning guidance would be welcome.", date: "W05-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 187 }}
+    ]
+  },
+  {
+    id: "trailofbits_security", skillUrl: "https://github.com/trailofbits/skills/blob/main/skills/security-audit/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1trailofbits000000000000000000000000000001", created_at: 1737504000 },
+    name: "Security Audit", emoji: "&#x1F6E1;",
+    description: "15+ security skills: smart contract auditing, static analysis, differential review, Semgrep rule creation, and OWASP coverage.",
+    author: { npub: "npub1trailofbits000000000000000000000000000001", name: "trailofbits" },
+    category: "Security", installCmd: "npx openskills install trailofbits/skills", version: "1.0.0", downloads: 15800,
+    publicReviews: [
+      { author: "sec_researcher", rating: 5, content: "Trail of Bits quality. The smart contract audit skill caught a reentrancy bug in our Solidity code.", date: "2026-02-09", suspicious: false },
+      { author: "HackerX2026", rating: 5, content: "Finds EVERY vulnerability!! Essential for all developers!!!", date: "2026-02-05", suspicious: true },
+      { author: "appsec_eng", rating: 4, content: "Strong static analysis. Semgrep rule generation is clever. Some false positives on Go code.", date: "2026-02-02", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "u3v4..w5x6", rating: 4, content: "Serious security tooling from a credible source. Static analysis rules are well-tuned. Smart contract coverage is thorough. Differential review catches changes that introduce vulns.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 98 }},
+      { anonId: "y7z8..a9b0", rating: 5, content: "Best security skill collection. The Semgrep integration is excellent. SARIF output integrates with existing CI pipelines. Trust this from Trail of Bits.", date: "W05-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 98 }}
+    ]
+  },
+  {
+    id: "obra_subagent", skillUrl: "https://github.com/obra/superpowers/blob/main/skills/subagent-driven-development/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1obra000000000000000000000000000000000001", created_at: 1737504000 },
+    name: "Subagent Development", emoji: "&#x1F916;",
+    description: "Multi-agent orchestration for complex tasks. Coordinate subagents for planning, coding, reviewing, and testing workflows.",
+    author: { npub: "npub1obra000000000000000000000000000000000001", name: "obra" },
+    category: "Workflow", installCmd: "npx openskills install obra/superpowers/subagent-driven-development", version: "1.0.0", downloads: 12300,
+    publicReviews: [
+      { author: "agent_builder", rating: 5, content: "Unlocks Claude's multi-agent potential. The orchestration patterns are well-designed.", date: "2026-02-09", suspicious: false },
+      { author: "SubagentFan", rating: 5, content: "GAME CHANGER!! 10x your AI agent instantly!!!", date: "2026-02-05", suspicious: true },
+      { author: "ml_ops", rating: 4, content: "Good framework. The planning-coding-review cycle works well. Needs better error recovery between agents.", date: "2026-02-01", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "c1d2..e3f4", rating: 4, content: "Thoughtful orchestration patterns. The plan-code-review cycle produces noticeably better results than single-agent workflows. Error propagation between agents needs improvement.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 82 }}
+    ]
+  },
+  {
+    id: "obra_brainstorming", skillUrl: "https://github.com/obra/superpowers/blob/main/skills/brainstorming/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1obra000000000000000000000000000000000001", created_at: 1737504000 },
+    name: "Brainstorming", emoji: "&#x1F4A1;",
+    description: "Structured brainstorming before implementation. Explore approaches, weigh tradeoffs, and reach consensus before writing code.",
+    author: { npub: "npub1obra000000000000000000000000000000000001", name: "obra" },
+    category: "Workflow", installCmd: "npx openskills install obra/superpowers/brainstorming", version: "1.0.0", downloads: 8900,
+    publicReviews: [
+      { author: "tech_lead", rating: 4, content: "Reduces rabbit-hole coding. Forces the agent to think before acting. Our PRs are smaller and cleaner now.", date: "2026-02-08", suspicious: false },
+      { author: "solo_dev", rating: 5, content: "Like having a senior engineer rubber-duck with you before every feature.", date: "2026-02-04", suspicious: false },
+      { author: "BrainStormPro", rating: 5, content: "AMAZING brainstorming!! Perfect ideas every time!!!", date: "2026-02-01", suspicious: true }
+    ],
+    wotReviews: [
+      { anonId: "g5h6..i7j8", rating: 4, content: "Genuinely improves output quality by front-loading design thinking. The tradeoff analysis is thoughtful. Works best for medium-complexity features where there are real architectural choices.", date: "W06-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 72 }}
+    ]
+  },
+  {
+    id: "devops_toolkit", skillUrl: "https://github.com/ahmedasmar/devops-claude-skills/blob/main/skills/kubernetes/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1ahmedasmar0000000000000000000000000000001", created_at: 1737504000 },
+    name: "Kubernetes Operator", emoji: "&#x2699;",
+    description: "Build Kubernetes operators, manage deployments, troubleshoot clusters, and implement GitOps workflows.",
+    author: { npub: "npub1ahmedasmar0000000000000000000000000000001", name: "ahmedasmar" },
+    category: "DevOps", installCmd: "npx openskills install ahmedasmar/devops-claude-skills/kubernetes", version: "1.2.0", downloads: 9700,
+    publicReviews: [
+      { author: "k8s_admin", rating: 4, content: "Good K8s troubleshooting. Manifest generation follows best practices. Helm chart creation is solid.", date: "2026-02-09", suspicious: false },
+      { author: "K8sMaster", rating: 5, content: "BEST Kubernetes tool!! Makes K8s EASY for everyone!!!", date: "2026-02-05", suspicious: true },
+      { author: "sre_team", rating: 4, content: "Helpful for incident response. The operator scaffolding saves significant time.", date: "2026-02-02", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "k9l0..m1n2", rating: 4, content: "Practical K8s skill. Manifest generation follows security best practices by default. Troubleshooting flow is logical. Operator scaffolding with Kubebuilder patterns works correctly.", date: "W06-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 68 }}
+    ]
+  },
+  {
+    id: "anthropic_skill_creator", skillUrl: "https://github.com/anthropics/skills/blob/main/skills/skill-creator/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1anthropic000000000000000000000000000001", created_at: 1735689600 },
+    name: "Skill Creator", emoji: "&#x1F3ED;",
+    description: "Create new Agent Skills with proper YAML frontmatter, instructions, and bundled resources. Build, test, and package skills.",
+    author: { npub: "npub1anthropic000000000000000000000000000001", name: "anthropic" },
+    category: "Development", installCmd: "npx openskills install anthropics/skills/skill-creator", version: "1.0.0", downloads: 16200,
+    publicReviews: [
+      { author: "skill_dev", rating: 5, content: "Meta but essential. Scaffolds skill structure correctly. YAML frontmatter validation is helpful.", date: "2026-02-09", suspicious: false },
+      { author: "SkillFactory", rating: 5, content: "CREATE SKILLS INSTANTLY!! Best meta-skill ever!!!", date: "2026-02-04", suspicious: true },
+      { author: "contributor", rating: 4, content: "Good for getting started. The eval framework helps test skill quality before publishing.", date: "2026-02-01", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "o3p4..q5r6", rating: 4, content: "Essential for anyone building skills. The scaffolding is correct and follows the spec. Eval framework provides useful quality signal. Good documentation of the SKILL.md standard.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 124 }}
+    ]
+  },
+  {
+    id: "vercel_webdesign", skillUrl: "https://github.com/vercel-labs/agent-skills/blob/main/skills/web-design-guidelines/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1vercel0000000000000000000000000000000001", created_at: 1736294400 },
+    name: "Web Design Guidelines", emoji: "&#x1F58C;",
+    description: "Comprehensive UI auditing with 100+ rules covering accessibility, performance, UX, animations, and internationalization.",
+    author: { npub: "npub1vercel0000000000000000000000000000000001", name: "vercel-labs" },
+    category: "Frontend", installCmd: "npx skills add vercel-labs/agent-skills/web-design-guidelines", version: "1.0.0", downloads: 21500,
+    publicReviews: [
+      { author: "a11y_expert", rating: 5, content: "Finally, accessibility rules built into the agent workflow. Catches WCAG violations early.", date: "2026-02-10", suspicious: false },
+      { author: "DesignGuru99", rating: 5, content: "PERFECT design rules!! Makes every website BEAUTIFUL!!!", date: "2026-02-06", suspicious: true },
+      { author: "ux_designer", rating: 4, content: "Strong UX rules. Animation guidelines prevent janky transitions. Some rules are too strict for marketing pages.", date: "2026-02-03", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "s7t8..u9v0", rating: 4, content: "Thorough design audit rules. Accessibility coverage is comprehensive. Performance rules catch common issues. The 100+ rule set is well-organized by severity.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 156 }}
+    ]
+  },
+  {
+    id: "openai_webgame", skillUrl: "https://github.com/openai/skills/blob/main/skills/.curated/develop-web-game/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1openai0000000000000000000000000000000001", created_at: 1736294400 },
+    name: "Web Game Developer", emoji: "&#x1F3AE;",
+    description: "Scaffold and develop web-based games with proper architecture, game loops, physics, and HTML5 Canvas rendering.",
+    author: { npub: "npub1openai0000000000000000000000000000000001", name: "openai" },
+    category: "Development", installCmd: "npx openskills install openai/skills/develop-web-game", version: "1.0.0", downloads: 14500,
+    publicReviews: [
+      { author: "game_dev", rating: 4, content: "Fun skill. Produces playable browser games quickly. Physics engine integration is decent.", date: "2026-02-08", suspicious: false },
+      { author: "GameMaster2026", rating: 5, content: "MAKES PERFECT GAMES!! AAA quality instantly!!!", date: "2026-02-04", suspicious: true },
+      { author: "hobby_coder", rating: 5, content: "Built a complete tower defense game in an afternoon. Canvas rendering is smooth.", date: "2026-02-01", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "w1x2..y3z4", rating: 4, content: "Good game scaffolding. Game loop architecture is correct. Canvas rendering performs well. Good for prototyping game ideas quickly. Not suitable for complex 3D games.", date: "W06-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 95 }}
+    ]
+  },
+  {
+    id: "anthropic_xlsx", skillUrl: "https://github.com/anthropics/skills/blob/main/skills/xlsx/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1anthropic000000000000000000000000000001", created_at: 1735689600 },
+    name: "Excel Spreadsheet Handler", emoji: "&#x1F4C8;",
+    description: "Create, edit, and analyze Excel spreadsheets with formulas, formatting, data analysis, charts, and visualization.",
+    author: { npub: "npub1anthropic000000000000000000000000000001", name: "anthropic" },
+    category: "Documents", installCmd: "npx openskills install anthropics/skills/xlsx", version: "1.0.0", downloads: 33600,
+    publicReviews: [
+      { author: "finance_team", rating: 5, content: "Complex financial models with proper formulas. Formatting is clean and professional.", date: "2026-02-09", suspicious: false },
+      { author: "ExcelKing", rating: 5, content: "BEST spreadsheet tool EVER!! Replaces Excel experts!!!", date: "2026-02-05", suspicious: true },
+      { author: "analyst_k", rating: 4, content: "Good for data analysis. Charts are basic but functional. Pivot table support would be nice.", date: "2026-02-02", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "a5b6..c7d8", rating: 4, content: "Reliable spreadsheet generation. Formula handling is correct including cross-sheet references. Formatting options are comprehensive. Chart creation covers common types.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 234 }}
+    ]
+  },
+  {
+    id: "openai_render_deploy", skillUrl: "https://github.com/openai/skills/blob/main/skills/.curated/render-deploy/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1openai0000000000000000000000000000000001", created_at: 1736294400 },
+    name: "Render Deploy", emoji: "&#x2601;",
+    description: "Deploy applications to Render platform with automated configuration, environment setup, and service management.",
+    author: { npub: "npub1openai0000000000000000000000000000000001", name: "openai" },
+    category: "DevOps", installCmd: "npx openskills install openai/skills/render-deploy", version: "1.0.0", downloads: 8400,
+    publicReviews: [
+      { author: "deploy_daily", rating: 4, content: "Smooth Render integration. Service config generation is accurate. Good for backend services.", date: "2026-02-08", suspicious: false },
+      { author: "CloudPro", rating: 5, content: "PERFECT deployments every time!! Zero config needed!!!", date: "2026-02-04", suspicious: true },
+      { author: "saas_founder", rating: 4, content: "Good for standard web services. Database provisioning and env var management work well.", date: "2026-01-30", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "e9f0..g1h2", rating: 4, content: "Practical deployment skill. Render config generation is accurate for common frameworks. Environment variable handling is clean. Good alternative to Vercel for backend services.", date: "W05-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 56 }}
+    ]
+  },
+  {
+    id: "d3js_viz", skillUrl: "https://github.com/chrisvoncsefalvay/claude-d3js-skill/blob/main/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1chrisvon0000000000000000000000000000001", created_at: 1737504000 },
+    name: "D3.js Visualization", emoji: "&#x1F4C9;",
+    description: "Create interactive data visualizations using D3.js with charts, graphs, maps, and custom visual encodings.",
+    author: { npub: "npub1chrisvon0000000000000000000000000000001", name: "chrisvoncsefalvay" },
+    category: "Data & ML", installCmd: "npx openskills install chrisvoncsefalvay/claude-d3js-skill", version: "1.0.0", downloads: 6300,
+    publicReviews: [
+      { author: "data_viz_pro", rating: 4, content: "Produces clean D3 visualizations. The interactive tooltips and transitions are smooth.", date: "2026-02-08", suspicious: false },
+      { author: "VizMaster", rating: 5, content: "BEST visualization tool!! Creates STUNNING charts!!!", date: "2026-02-04", suspicious: true },
+      { author: "journalist", rating: 4, content: "Great for editorial data viz. Map projections work well. Needs more chart type templates.", date: "2026-02-01", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "i3j4..k5l6", rating: 4, content: "Good D3 skill. Produces clean, idiomatic D3 code. Interactive features work correctly. Responsive by default. Limited chart type variety but extensible.", date: "W06-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 52 }}
+    ]
+  },
+  {
+    id: "owasp_security", skillUrl: "https://github.com/agamm/claude-code-owasp/blob/main/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1agamm00000000000000000000000000000000001", created_at: 1737504000 },
+    name: "OWASP Best Practices", emoji: "&#x1F512;",
+    description: "2025 OWASP Top 10, ASVS 5.0, and 20+ language-specific security patterns for secure coding guidance.",
+    author: { npub: "npub1agamm00000000000000000000000000000000001", name: "agamm" },
+    category: "Security", installCmd: "npx openskills install agamm/claude-code-owasp", version: "1.1.0", downloads: 11200,
+    publicReviews: [
+      { author: "sec_eng", rating: 5, content: "Comprehensive OWASP coverage. The language-specific patterns are practical and actionable.", date: "2026-02-09", suspicious: false },
+      { author: "SecurityHero", rating: 5, content: "EVERY developer MUST install this!! Prevents ALL vulnerabilities!!!", date: "2026-02-05", suspicious: true },
+      { author: "backend_lead", rating: 4, content: "Good baseline security. ASVS 5.0 integration is thorough. Some rules overlap with linters.", date: "2026-02-02", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "m7n8..o9p0", rating: 4, content: "Well-maintained OWASP reference. Language-specific patterns are practical. ASVS coverage helps with compliance requirements. Updated for 2025 Top 10 changes.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 87 }}
+    ]
+  },
+  {
+    id: "hf_trackio", skillUrl: "https://github.com/huggingface/skills/blob/main/skills/hugging-face-trackio/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1huggingface00000000000000000000000000001", created_at: 1736899200 },
+    name: "HF Experiment Tracking", emoji: "&#x1F4CA;",
+    description: "Track and visualize ML training experiments with Trackio integration, real-time dashboards, and run comparison.",
+    author: { npub: "npub1huggingface00000000000000000000000000001", name: "huggingface" },
+    category: "Data & ML", installCmd: "npx openskills install huggingface/skills/hugging-face-trackio", version: "1.0.0", downloads: 7800,
+    publicReviews: [
+      { author: "ml_eng", rating: 4, content: "Good experiment tracking. Real-time dashboards are clean. Run comparison is useful for hyperparameter sweeps.", date: "2026-02-07", suspicious: false },
+      { author: "TrackingPro", rating: 5, content: "BEST experiment tracker!! Makes ML research EASY!!!", date: "2026-02-03", suspicious: true },
+      { author: "researcher", rating: 4, content: "Solid Trackio integration. The visualization defaults are sensible. Export to CSV works well.", date: "2026-01-30", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "q1r2..s3t4", rating: 4, content: "Reliable experiment tracking. Dashboard visualizations are clear. Run comparison handles multiple metrics well. Good integration with the HF training skills.", date: "W06-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 63 }}
+    ]
+  },
+  {
+    id: "anthropic_algart", skillUrl: "https://github.com/anthropics/skills/blob/main/skills/algorithmic-art/SKILL.md",
+    nostr_event: { kind: 31990, pubkey: "npub1anthropic000000000000000000000000000001", created_at: 1735689600 },
+    name: "Algorithmic Art", emoji: "&#x1F308;",
+    description: "Create computational aesthetic art using generative algorithms with interactive HTML viewers and philosophical documentation.",
+    author: { npub: "npub1anthropic000000000000000000000000000001", name: "anthropic" },
+    category: "Frontend", installCmd: "npx openskills install anthropics/skills/algorithmic-art", version: "1.0.0", downloads: 11800,
+    publicReviews: [
+      { author: "gen_artist", rating: 5, content: "Produces genuinely beautiful generative art. The interactive HTML viewers are a great touch.", date: "2026-02-08", suspicious: false },
+      { author: "ArtBot2026", rating: 5, content: "CREATES MASTERPIECES!! Best AI art skill EVER!!!", date: "2026-02-04", suspicious: true },
+      { author: "creative_dev", rating: 4, content: "Fun and inspiring. The philosophical framing adds depth. Good for portfolio pieces and visual experiments.", date: "2026-02-01", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "u5v6..w7x8", rating: 5, content: "Surprisingly artistic output. The generative algorithms produce unique, non-repetitive patterns. Interactive viewers work smoothly. Good for creative coding projects and visual portfolios.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 89 }}
+    ]
+  }
+];
+
+const CONNECTORS = [
+  {
+    id: "github_mcp", connectorUrl: "https://github.com/github/github-mcp-server",
+    nostr_event: { kind: 31990, pubkey: "npub1github0000000000000000000000000000000001", created_at: 1735689600 },
+    name: "GitHub", emoji: "&#x1F419;",
+    description: "Official GitHub integration — browse repos, manage issues and PRs, analyze code, trigger CI/CD workflows, and review security alerts.",
+    author: { npub: "npub1github0000000000000000000000000000000001", name: "github" },
+    category: "Developer Tools", version: "1.0.0", downloads: 89400, official: true,
+    publicReviews: [
+      { author: "DevTeamLead", rating: 5, content: "The gold standard for GitHub integration. PR management is seamless.", date: "2026-02-10", suspicious: false },
+      { author: "GH_Fan2026", rating: 5, content: "BEST MCP SERVER EVER!! USE IT NOW!!", date: "2026-02-07", suspicious: true },
+      { author: "oss_contributor", rating: 4, content: "Great for issue triage. Code search could be faster on large repos.", date: "2026-02-04", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "g1h2..i3j4", rating: 5, content: "Used daily for 3 months across 12 repos. PR review workflow is excellent. Issue management is reliable. Code search works well for repos under 100k files.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 420 }},
+      { anonId: "k5l6..m7n8", rating: 4, content: "Solid for CI/CD monitoring. Only limitation is rate limiting on large orgs with many workflows. Everything else is production-grade.", date: "W05-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 420 }}
+    ]
+  },
+  {
+    id: "slack_mcp", connectorUrl: "https://github.com/modelcontextprotocol/servers/tree/main/src/slack",
+    nostr_event: { kind: 31990, pubkey: "npub1mcp00000000000000000000000000000000000001", created_at: 1735689600 },
+    name: "Slack", emoji: "&#x1F4AC;",
+    description: "Read channels, send messages, search conversations, manage threads, and access workspace data without OAuth complexity.",
+    author: { npub: "npub1mcp00000000000000000000000000000000000001", name: "modelcontextprotocol" },
+    category: "Communication", version: "0.6.2", downloads: 34200, official: true,
+    publicReviews: [
+      { author: "PM_Alex", rating: 4, content: "Great for automated standups and channel summaries. Reliable messaging.", date: "2026-02-09", suspicious: false },
+      { author: "slack_power_user", rating: 5, content: "INCREDIBLE!! Changed my life!! 11/10!!", date: "2026-02-06", suspicious: true },
+      { author: "eng_ops", rating: 4, content: "Thread management works well. Search is fast. Wish it supported reactions.", date: "2026-02-03", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "s1t2..u3v4", rating: 4, content: "Reliable for automated reporting. Message search is comprehensive. Thread management handles nested conversations well. Rate limits are generous for most use cases.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 290 }}
+    ]
+  },
+  {
+    id: "postgres_mcp", connectorUrl: "https://github.com/modelcontextprotocol/servers/tree/main/src/postgres",
+    nostr_event: { kind: 31990, pubkey: "npub1mcp00000000000000000000000000000000000001", created_at: 1735689600 },
+    name: "PostgreSQL", emoji: "&#x1F418;",
+    description: "Run SQL queries, explore schemas, analyze performance, and manage PostgreSQL databases with read-only safety defaults.",
+    author: { npub: "npub1mcp00000000000000000000000000000000000001", name: "modelcontextprotocol" },
+    category: "Databases", version: "0.6.2", downloads: 42100, official: true,
+    publicReviews: [
+      { author: "DBA_Jane", rating: 5, content: "Schema exploration is brilliant. Query analysis helps optimize slow queries.", date: "2026-02-10", suspicious: false },
+      { author: "data_eng", rating: 4, content: "Read-only default is smart. Wish it had better support for extensions.", date: "2026-02-05", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "p1q2..r3s4", rating: 5, content: "Production-grade Postgres integration. Schema introspection is thorough. Read-only defaults prevent accidents. Query explain plans are incredibly useful for optimization.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 340 }}
+    ]
+  },
+  {
+    id: "brave_search", connectorUrl: "https://github.com/modelcontextprotocol/servers/tree/main/src/brave-search",
+    nostr_event: { kind: 31990, pubkey: "npub1brave0000000000000000000000000000000001", created_at: 1735689600 },
+    name: "Brave Search", emoji: "&#x1F981;",
+    description: "Web and local search via the Brave Search API — supports news, images, videos, and location-based results with privacy focus.",
+    author: { npub: "npub1brave0000000000000000000000000000000001", name: "brave" },
+    category: "Search", version: "0.6.2", downloads: 28700, official: true,
+    publicReviews: [
+      { author: "researcher_k", rating: 4, content: "Solid privacy-respecting search. Results quality is good, especially for tech queries.", date: "2026-02-08", suspicious: false },
+      { author: "SearchBot99", rating: 5, content: "AMAZING SEARCH!! BEST EVER!!", date: "2026-02-04", suspicious: true }
+    ],
+    wotReviews: [
+      { anonId: "b1c2..d3e4", rating: 4, content: "Reliable search API with good result relevance. Local search is useful for location-aware agents. API key setup is straightforward. Rate limits are reasonable for most applications.", date: "W05-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 215 }}
+    ]
+  },
+  {
+    id: "notion_mcp", connectorUrl: "https://github.com/makenotion/notion-mcp-server",
+    nostr_event: { kind: 31990, pubkey: "npub1notion000000000000000000000000000000001", created_at: 1735689600 },
+    name: "Notion", emoji: "&#x1F4DD;",
+    description: "Official Notion integration — query databases, create and update pages, manage properties, and search across your workspace.",
+    author: { npub: "npub1notion000000000000000000000000000000001", name: "notion" },
+    category: "Productivity", version: "1.0.0", downloads: 31500, official: true,
+    publicReviews: [
+      { author: "ProductMgr", rating: 5, content: "Database queries are powerful. Page creation with templates works great.", date: "2026-02-09", suspicious: false },
+      { author: "notion_daily", rating: 4, content: "Good for automated docs. Wish it handled relation properties better.", date: "2026-02-03", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "n1o2..p3q4", rating: 4, content: "Reliable workspace integration. Database queries handle complex filters. Page creation is fast. Some advanced block types not fully supported yet, but core features are solid.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 265 }}
+    ]
+  },
+  {
+    id: "stripe_mcp", connectorUrl: "https://github.com/stripe/agent-toolkit",
+    nostr_event: { kind: 31990, pubkey: "npub1stripe00000000000000000000000000000001", created_at: 1735689600 },
+    name: "Stripe", emoji: "&#x1F4B3;",
+    description: "Stripe payments integration — manage customers, subscriptions, invoices, and payment intents with built-in safety rails.",
+    author: { npub: "npub1stripe00000000000000000000000000000001", name: "stripe" },
+    category: "Finance", version: "0.1.0", downloads: 18900, official: true,
+    publicReviews: [
+      { author: "saas_founder", rating: 5, content: "Payment automation is a game changer. Customer management is seamless.", date: "2026-02-08", suspicious: false },
+      { author: "billing_ops", rating: 4, content: "Invoice handling works well. Would love better subscription analytics.", date: "2026-02-02", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "s5t6..u7v8", rating: 4, content: "Useful for subscription management and invoice automation. Safety rails prevent accidental charges. Read operations are reliable. Write operations need careful prompt design.", date: "W05-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 180 }}
+    ]
+  },
+  {
+    id: "mongodb_mcp", connectorUrl: "https://github.com/mongodb-js/mongodb-mcp-server",
+    nostr_event: { kind: 31990, pubkey: "npub1mongodb0000000000000000000000000000001", created_at: 1735689600 },
+    name: "MongoDB", emoji: "&#x1F343;",
+    description: "Connect to MongoDB Atlas and Community — query collections, inspect schemas, manage indexes, and run aggregation pipelines.",
+    author: { npub: "npub1mongodb0000000000000000000000000000001", name: "mongodb" },
+    category: "Databases", version: "0.1.0", downloads: 22300, official: true,
+    publicReviews: [
+      { author: "backend_dev", rating: 4, content: "Aggregation pipeline support is excellent. Schema inspection saves tons of time.", date: "2026-02-09", suspicious: false },
+      { author: "NoSQLFan", rating: 5, content: "MONGODB IS THE BEST!! THIS SERVER IS PERFECT!!", date: "2026-02-05", suspicious: true }
+    ],
+    wotReviews: [
+      { anonId: "m1n2..o3p4", rating: 4, content: "Solid MongoDB integration. Aggregation pipelines work correctly. Atlas connection is seamless. Index management is useful for optimization. Schema inspection handles nested documents well.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 195 }}
+    ]
+  },
+  {
+    id: "redis_mcp", connectorUrl: "https://github.com/redis/mcp-redis",
+    nostr_event: { kind: 31990, pubkey: "npub1redis0000000000000000000000000000000001", created_at: 1735689600 },
+    name: "Redis", emoji: "&#x1F534;",
+    description: "Official Redis MCP server — manage data structures, search, sessions, and caching with full command support.",
+    author: { npub: "npub1redis0000000000000000000000000000000001", name: "redis" },
+    category: "Databases", version: "0.1.0", downloads: 15800, official: true,
+    publicReviews: [
+      { author: "cache_master", rating: 4, content: "Great for cache management. Full command support is impressive.", date: "2026-02-07", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "r1s2..t3u4", rating: 4, content: "Reliable Redis operations. Session management works well for agent state. Pub/sub support enables real-time patterns. Search module integration is a nice bonus.", date: "W05-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 145 }}
+    ]
+  },
+  {
+    id: "aws_mcp", connectorUrl: "https://github.com/awslabs/mcp",
+    nostr_event: { kind: 31990, pubkey: "npub1aws000000000000000000000000000000000001", created_at: 1735689600 },
+    name: "AWS", emoji: "&#x2601;",
+    description: "AWS services integration — manage EC2, S3, Lambda, and more. Includes documentation lookup and resource management.",
+    author: { npub: "npub1aws000000000000000000000000000000000001", name: "awslabs" },
+    category: "Cloud", version: "0.4.0", downloads: 26300, official: true,
+    publicReviews: [
+      { author: "cloud_arch", rating: 4, content: "S3 and Lambda management work great. EC2 operations are reliable.", date: "2026-02-08", suspicious: false },
+      { author: "DevOps_pro", rating: 4, content: "Good for infrastructure queries. Documentation lookup is very handy.", date: "2026-02-03", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "a3b4..c5d6", rating: 4, content: "Comprehensive AWS coverage. S3 operations are fast and reliable. Lambda deployment works smoothly. IAM permission boundaries keep things safe. Documentation tool is great for learning.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 280 }}
+    ]
+  },
+  {
+    id: "cloudflare_mcp", connectorUrl: "https://github.com/cloudflare/mcp-server-cloudflare",
+    nostr_event: { kind: 31990, pubkey: "npub1cloudflare000000000000000000000000000001", created_at: 1735689600 },
+    name: "Cloudflare", emoji: "&#x1F7E0;",
+    description: "Deploy and manage Cloudflare Workers, KV, R2, D1, and DNS from your agent with natural language commands.",
+    author: { npub: "npub1cloudflare000000000000000000000000000001", name: "cloudflare" },
+    category: "Cloud", version: "0.1.0", downloads: 19400, official: true,
+    publicReviews: [
+      { author: "edge_dev", rating: 5, content: "Workers deployment is incredibly smooth. KV management saves so much time.", date: "2026-02-09", suspicious: false },
+      { author: "dns_admin", rating: 4, content: "DNS management works well. R2 bucket operations are reliable.", date: "2026-02-04", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "c7d8..e9f0", rating: 5, content: "Excellent for edge deployment. Workers deploy in seconds. KV operations are fast. D1 database management handles migrations well. Natural language DNS changes actually work.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 175 }}
+    ]
+  },
+  {
+    id: "sentry_mcp", connectorUrl: "https://github.com/getsentry/sentry-mcp",
+    nostr_event: { kind: 31990, pubkey: "npub1sentry0000000000000000000000000000000001", created_at: 1735689600 },
+    name: "Sentry", emoji: "&#x1F6A8;",
+    description: "Error tracking and issue analysis — search errors, view stack traces, get AI-powered fix suggestions via Seer.",
+    author: { npub: "npub1sentry0000000000000000000000000000000001", name: "getsentry" },
+    category: "Monitoring", version: "0.1.0", downloads: 14600, official: true,
+    publicReviews: [
+      { author: "oncall_eng", rating: 5, content: "Stack trace analysis is fantastic. Seer fix suggestions are surprisingly accurate.", date: "2026-02-10", suspicious: false },
+      { author: "debug_daily", rating: 4, content: "Great for incident triage. Issue search is fast and comprehensive.", date: "2026-02-04", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "s9t0..u1v2", rating: 5, content: "Essential for debugging workflows. Stack trace analysis saves hours. Seer recommendations are relevant 80% of the time. Issue grouping and triage features work reliably.", date: "W05-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 155 }}
+    ]
+  },
+  {
+    id: "gdrive_mcp", connectorUrl: "https://github.com/modelcontextprotocol/servers/tree/main/src/gdrive",
+    nostr_event: { kind: 31990, pubkey: "npub1mcp00000000000000000000000000000000000001", created_at: 1735689600 },
+    name: "Google Drive", emoji: "&#x1F4C1;",
+    description: "List, read, and search Google Drive files — supports Docs, Sheets, and binary file exports with OAuth authentication.",
+    author: { npub: "npub1mcp00000000000000000000000000000000000001", name: "modelcontextprotocol" },
+    category: "Storage", version: "0.6.2", downloads: 21700, official: true,
+    publicReviews: [
+      { author: "doc_manager", rating: 4, content: "File search is powerful. Docs export to markdown works great.", date: "2026-02-07", suspicious: false },
+      { author: "team_admin", rating: 4, content: "Good for automated file organization. OAuth setup could be simpler.", date: "2026-02-02", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "g5h6..i7j8", rating: 4, content: "Solid Google Drive integration. File search handles shared drives. Docs-to-markdown export is accurate. Large file handling needs patience. OAuth flow works once configured.", date: "W06-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 230 }}
+    ]
+  },
+  {
+    id: "gitlab_mcp", connectorUrl: "https://github.com/gitlab/mcp-server-gitlab",
+    nostr_event: { kind: 31990, pubkey: "npub1gitlab0000000000000000000000000000000001", created_at: 1735689600 },
+    name: "GitLab", emoji: "&#x1F98A;",
+    description: "Official GitLab MCP — manage issues, merge requests, CI/CD pipelines, and code review with OAuth 2.0 authentication.",
+    author: { npub: "npub1gitlab0000000000000000000000000000000001", name: "gitlab" },
+    category: "Developer Tools", version: "0.1.0", downloads: 16800, official: true,
+    publicReviews: [
+      { author: "devops_lead", rating: 4, content: "MR management is solid. Pipeline monitoring saves a lot of context switching.", date: "2026-02-08", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "g9l0..m1n2", rating: 4, content: "Reliable GitLab integration for self-hosted and SaaS. MR reviews work well. CI/CD pipeline inspection is thorough. Code search across projects is useful.", date: "W05-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 165 }}
+    ]
+  },
+  {
+    id: "linear_mcp", connectorUrl: "https://github.com/linear/linear-mcp-server",
+    nostr_event: { kind: 31990, pubkey: "npub1linear00000000000000000000000000000001", created_at: 1735689600 },
+    name: "Linear", emoji: "&#x1F3AF;",
+    description: "Issue tracking and project management — create issues, update status, query backlogs, and manage sprints from your agent.",
+    author: { npub: "npub1linear00000000000000000000000000000001", name: "linear" },
+    category: "Productivity", version: "1.0.0", downloads: 19200, official: true,
+    publicReviews: [
+      { author: "eng_manager", rating: 5, content: "Sprint management is seamless. Issue creation with proper labels works perfectly.", date: "2026-02-09", suspicious: false },
+      { author: "product_owner", rating: 4, content: "Great for backlog grooming. Would love better reporting features.", date: "2026-02-05", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "l3i4..n5e6", rating: 5, content: "Best project management connector available. Issue lifecycle management is smooth. Sprint velocity tracking works. Cycle automations save significant time.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 200 }}
+    ]
+  },
+  {
+    id: "exa_mcp", connectorUrl: "https://github.com/exa-labs/exa-mcp-server",
+    nostr_event: { kind: 31990, pubkey: "npub1exa000000000000000000000000000000000001", created_at: 1735689600 },
+    name: "Exa Search", emoji: "&#x1F52C;",
+    description: "AI-native search API — semantic web search, code search, company research, and deep research with structured results.",
+    author: { npub: "npub1exa000000000000000000000000000000000001", name: "exa-labs" },
+    category: "Search", version: "1.0.0", downloads: 15200, official: true,
+    publicReviews: [
+      { author: "researcher_m", rating: 5, content: "Semantic search is leagues ahead of keyword search. Company research is thorough.", date: "2026-02-07", suspicious: false },
+      { author: "ai_builder", rating: 4, content: "Code search is useful. Deep research mode takes time but returns quality results.", date: "2026-02-03", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "e1x2..a3s4", rating: 5, content: "Superior search quality for research-heavy tasks. Semantic understanding beats keyword search. Company research pulls from multiple sources. Code search finds relevant examples quickly.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 140 }}
+    ]
+  },
+  {
+    id: "hf_mcp", connectorUrl: "https://github.com/huggingface/hf-mcp-server",
+    nostr_event: { kind: 31990, pubkey: "npub1hf000000000000000000000000000000000001", created_at: 1735689600 },
+    name: "Hugging Face Hub", emoji: "&#x1F917;",
+    description: "Access HF models, datasets, Spaces, and papers — search the hub, download model cards, and manage inference endpoints.",
+    author: { npub: "npub1hf000000000000000000000000000000000001", name: "huggingface" },
+    category: "AI & ML", version: "0.1.0", downloads: 20100, official: true,
+    publicReviews: [
+      { author: "ml_engineer", rating: 5, content: "Model discovery is amazing. Dataset search saves hours of manual browsing.", date: "2026-02-08", suspicious: false },
+      { author: "AI_Lover", rating: 5, content: "HUGGING FACE IS THE FUTURE!! 10/10!!", date: "2026-02-04", suspicious: true }
+    ],
+    wotReviews: [
+      { anonId: "h1f2..m3c4", rating: 4, content: "Comprehensive hub integration. Model search handles complex filters. Dataset previews are useful. Paper search enables good literature reviews. Inference endpoint management works smoothly.", date: "W06-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 185 }}
+    ]
+  },
+  {
+    id: "supabase_mcp", connectorUrl: "https://github.com/supabase-community/supabase-mcp",
+    nostr_event: { kind: 31990, pubkey: "npub1supabase000000000000000000000000000001", created_at: 1735689600 },
+    name: "Supabase", emoji: "&#x26A1;",
+    description: "Query Supabase databases, manage tables, handle auth, and interact with storage buckets and edge functions.",
+    author: { npub: "npub1supabase000000000000000000000000000001", name: "supabase" },
+    category: "Databases", version: "0.2.0", downloads: 17400, official: true,
+    publicReviews: [
+      { author: "fullstack_dev", rating: 5, content: "Complete Supabase management from the agent. Auth and storage work perfectly.", date: "2026-02-09", suspicious: false },
+      { author: "indie_hacker", rating: 4, content: "Great for rapid prototyping. Edge function deployment is smooth.", date: "2026-02-04", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "s1u2..p3a4", rating: 5, content: "Excellent backend-as-a-service connector. Table operations are fast. Auth management handles user flows well. Storage integration is seamless. RLS policies work correctly.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 170 }}
+    ]
+  },
+  {
+    id: "vercel_mcp", connectorUrl: "https://github.com/vercel/vercel-mcp-overview",
+    nostr_event: { kind: 31990, pubkey: "npub1vercel00000000000000000000000000000001", created_at: 1735689600 },
+    name: "Vercel", emoji: "&#x25B2;",
+    description: "Manage Vercel projects, trigger deployments, configure environment variables, and monitor build status from your agent.",
+    author: { npub: "npub1vercel00000000000000000000000000000001", name: "vercel" },
+    category: "Cloud", version: "0.1.0", downloads: 21900, official: true,
+    publicReviews: [
+      { author: "frontend_eng", rating: 5, content: "Deployment automation is a dream. Environment variable management saves context switching.", date: "2026-02-10", suspicious: false },
+      { author: "team_lead", rating: 4, content: "Build monitoring is useful. Preview deployments work reliably.", date: "2026-02-05", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "v1e2..r3c4", rating: 5, content: "Streamlines the deploy workflow significantly. Project management is intuitive. Build logs are accessible. Environment variable handling is secure. Preview URLs are generated correctly.", date: "W06-2026", distance: 1, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 195 }}
+    ]
+  },
+  {
+    id: "atlassian_mcp", connectorUrl: "https://github.com/atlassian/atlassian-mcp-server",
+    nostr_event: { kind: 31990, pubkey: "npub1atlassian0000000000000000000000000000001", created_at: 1735689600 },
+    name: "Jira & Confluence", emoji: "&#x1F4CB;",
+    description: "Atlassian integration — manage Jira issues, search Confluence pages, track sprints, and navigate project boards.",
+    author: { npub: "npub1atlassian0000000000000000000000000000001", name: "atlassian" },
+    category: "Productivity", version: "0.1.0", downloads: 23600, official: true,
+    publicReviews: [
+      { author: "scrum_master", rating: 4, content: "Jira issue management is solid. Confluence search could be faster.", date: "2026-02-08", suspicious: false },
+      { author: "project_coord", rating: 4, content: "Sprint tracking works well. Board navigation is intuitive.", date: "2026-02-03", suspicious: false }
+    ],
+    wotReviews: [
+      { anonId: "a1t2..l3s4", rating: 4, content: "Good enterprise integration. Jira issues lifecycle is well-handled. JQL queries work correctly. Confluence search returns relevant pages. OAuth setup is standard but requires admin access.", date: "W05-2026", distance: 2, proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 250 }}
+    ]
+  }
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let userNsec = ''; // user's Nostr private key (stays local)
+let userNpub = ''; // derived public key
+let currentMode = 'public'; // 'public' | 'wot'
+let currentType = 'skills'; // 'skills' | 'connectors'
+let currentCategory = 'All';
+let currentSort = 'installs'; // 'installs' | 'rating'
+let searchQuery = '';
+let selectedSkill = null;
+
+// ============================================================
+// RENDERING
+// ============================================================
+function getStars(rating) {
+  return '&#x2605;'.repeat(rating) + '&#x2606;'.repeat(5 - rating);
+}
+
+function getAvgRating(reviews) {
+  if (!reviews.length) return 0;
+  return (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1);
+}
+
+function getCatClass(cat) { return CAT_CLASSES[cat] || ''; }
+function getActiveData() { return currentType === 'skills' ? SKILLS : CONNECTORS; }
+function getActiveCategories() { return currentType === 'skills' ? SKILL_CATEGORIES : CONNECTOR_CATEGORIES; }
+
+function renderTypeTabs() {
+  document.getElementById('typeTabs').innerHTML = [
+    { key: 'skills', label: 'Skills', count: SKILLS.length },
+    { key: 'connectors', label: 'Connectors', count: CONNECTORS.length }
+  ].map(t =>
+    `<button class="type-tab ${t.key === currentType ? 'active' : ''}" onclick="setType('${t.key}')">${t.label}<span class="tab-count">${t.count}</span></button>`
+  ).join('');
+}
+
+function renderCategories() {
+  const cats = getActiveCategories();
+  const el = document.getElementById('categories');
+  el.innerHTML = cats.map(c =>
+    `<button class="cat-pill ${c === currentCategory ? 'active' : ''}" onclick="setCategory('${c}')">${c}</button>`
+  ).join('');
+}
+
+function renderSortButtons() {
+  const sorts = [
+    { key: 'installs', label: 'Installs' },
+    { key: 'rating', label: 'Rating' }
+  ];
+  document.getElementById('sortButtons').innerHTML = sorts.map(s =>
+    `<button class="sort-btn ${s.key === currentSort ? 'active' : ''}" onclick="setSort('${s.key}')">${s.label}<span class="arrow">&#x25BC;</span></button>`
+  ).join('');
+}
+
+function sortData(items) {
+  const arr = [...items];
+  if (currentSort === 'installs') return arr.sort((a, b) => b.downloads - a.downloads);
+  if (currentSort === 'rating') {
+    const key = currentMode === 'wot' ? 'wotReviews' : 'publicReviews';
+    return arr.sort((a, b) => getAvgRating(b[key]) - getAvgRating(a[key]));
+  }
+  return arr;
+}
+
+function renderSkillGrid() {
+  const grid = document.getElementById('skillGrid');
+  let filtered = getActiveData();
+
+  if (currentCategory !== 'All') {
+    filtered = filtered.filter(s => s.category === currentCategory);
+  }
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filtered = filtered.filter(s =>
+      s.name.toLowerCase().includes(q) ||
+      s.description.toLowerCase().includes(q) ||
+      s.category.toLowerCase().includes(q) ||
+      s.author.name.toLowerCase().includes(q)
+    );
+  }
+
+  filtered = sortData(filtered);
+  document.getElementById('resultCount').textContent = `${filtered.length} ${currentType}`;
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="icon">&#x1F50D;</div>
+      <h3>NOTHING FOUND</h3>
+      <p>Try adjusting your search or category filter.</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(s => {
+    const reviews = currentMode === 'wot' ? s.wotReviews : s.publicReviews;
+    const avg = getAvgRating(reviews);
+    const count = reviews.length;
+    const isWot = currentMode === 'wot';
+    const catCls = getCatClass(s.category);
+    const starsFull = Math.round(avg);
+
+    const trailingMeta = isWot
+      ? `<span class="card-wot-badge">&#x1F6E1; ${count} verified</span>`
+      : `<span class="card-author-name">${s.author.name}</span>`;
+
+    return `<div class="skill-card" onclick="openDetail('${s.id}')">
+      <div class="card-cat-bar ${catCls}">${s.category}</div>
+      <div class="card-content">
+        <div class="card-row-title">
+          <span class="card-emoji">${s.emoji}</span>
+          <span class="card-name">${s.name}</span>
+        </div>
+        <div class="card-desc">${s.description}</div>
+        <div class="card-meta">
+          <span class="card-meta-item"><span class="card-meta-stars">${getStars(starsFull)}</span> <span class="val">${avg}</span> (${count})</span>
+          <span class="card-meta-item"><span class="val">${s.downloads.toLocaleString()}</span> installs</span>
+          ${trailingMeta}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderDetail(skill) {
+  const reviews = currentMode === 'wot' ? skill.wotReviews : skill.publicReviews;
+  const avg = getAvgRating(reviews);
+  const catCls = getCatClass(skill.category);
+  const isWot = currentMode === 'wot';
+
+  const modeLabel = isWot
+    ? `<span class="review-mode-label mode-wot">&#x1F6E1; WOT SHIELD</span>`
+    : `<span class="review-mode-label mode-public">&#x1F310; PUBLIC FEED</span>`;
+
+  const reviewsHtml = reviews.map(r => {
+    if (isWot) {
+      const distDots = [1,2,3].map(d =>
+        `<span class="td-dot ${d <= r.distance ? 'active' : 'dim'}"></span>`
+      ).join('');
+
+      return `<div class="review-card wot-verified">
+        <div class="review-top">
+          <div class="review-author">
+            <span class="review-author-anon">&#x1F47B; ${r.anonId}</span>
+            <div class="trust-distance-indicator">${distDots} <span>${r.distance === 1 ? '1st' : r.distance === 2 ? '2nd' : '3rd'} degree</span></div>
+          </div>
+          <div class="review-stars">${getStars(r.rating)}</div>
+        </div>
+        <div class="review-content">${r.content}</div>
+        <div class="review-bottom">
+          <div class="proof-badges">
+            ${r.proof.membership ? '<span class="proof-badge badge-wot">&#x2713; WoT Member<span class="tooltip">ZK proof that the reviewer is in your Nostr follow graph, without revealing who they are.</span></span>' : ''}
+            ${r.proof.interaction ? '<span class="proof-badge badge-interaction">&#x2713; Verified Interaction<span class="tooltip">Cryptographic receipt (Cashu blind signature) proving the reviewer actually used this skill or connector.</span></span>' : ''}
+            ${r.proof.timeblind ? '<span class="proof-badge badge-timeblind">&#x2713; TimeBlind<span class="tooltip">Review timestamp is blurred to a weekly epoch, preventing timing-based deanonymization.</span></span>' : ''}
+            ${r.proof.nullifier ? '<span class="proof-badge badge-nullifier">&#x2713; Unique<span class="tooltip">Epoch-scoped nullifier ensures one review per person per item per time period. No duplicates.</span></span>' : ''}
+            <span class="proof-badge badge-anon-set">k=${r.proof.anon_set}<span class="tooltip">Anonymity set size — this reviewer is hidden among ${r.proof.anon_set} possible identities. Higher k = stronger privacy.</span></span>
+          </div>
+          <div class="review-date">${r.date}</div>
+        </div>
+      </div>`;
+    } else {
+      const suspTag = r.suspicious ? '<span class="suspicious-tag">&#x26A0; Unverified</span>' : '';
+      return `<div class="review-card ${r.suspicious ? 'suspicious' : ''}">
+        <div class="review-top">
+          <div class="review-author">
+            <span class="review-author-name">${r.author}</span>
+            ${suspTag}
+          </div>
+          <div class="review-stars">${getStars(r.rating)}</div>
+        </div>
+        <div class="review-content">${r.content}</div>
+        <div class="review-bottom">
+          <div></div>
+          <div class="review-date">${r.date}</div>
+        </div>
+      </div>`;
+    }
+  }).join('');
+
+  const wotAvg = getAvgRating(skill.wotReviews);
+  const pubAvg = getAvgRating(skill.publicReviews);
+
+  document.getElementById('detailPanel').innerHTML = `
+    <button class="close-btn" onclick="closeDetail()">&#x2715;</button>
+    <div class="detail-header">
+      <div class="detail-avatar">${skill.emoji}</div>
+      <div>
+        <div class="detail-title">${skill.name}</div>
+        <div class="detail-meta">by <strong>${skill.author.name}</strong> &middot; <span class="card-cat ${catCls}">${skill.category}</span> &middot; v${skill.version}</div>
+      </div>
+    </div>
+    <div class="detail-desc">${skill.description}</div>
+    <div style="font-size:13px;margin-bottom:12px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;word-break:break-all;">
+      <span style="color:var(--text-dim);">${skill.skillUrl ? 'Skill' : 'Connector'} ID:</span> <a href="${skill.skillUrl || skill.connectorUrl}" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;font-family:var(--mono);">${skill.skillUrl || skill.connectorUrl}</a>
+    </div>
+    ${skill.installCmd ? `<div class="detail-install">
+      <span>&gt; ${skill.installCmd}</span>
+      <button class="copy-btn" onclick="navigator.clipboard.writeText('${skill.installCmd}');this.textContent='COPIED!'">COPY</button>
+    </div>` : ''}
+    <div class="detail-stats">
+      <div class="stat-box">
+        <div class="stat-value" style="color:#8a5a0a">${getStars(Math.round(pubAvg))} ${pubAvg}</div>
+        <div class="stat-label">Public Rating</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" style="color:#2d6a1e">${getStars(Math.round(wotAvg))} ${wotAvg}</div>
+        <div class="stat-label">WoT Rating</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" style="color:#3d3425">${skill.downloads.toLocaleString()}</div>
+        <div class="stat-label">Installs</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" style="color:#6a4a2a">${skill.publicReviews.length} / ${skill.wotReviews.length}</div>
+        <div class="stat-label">Public / WoT Reviews</div>
+      </div>
+    </div>
+    <div class="reviews-header">
+      <div class="reviews-title">REVIEWS (${reviews.length})</div>
+      ${modeLabel}
+    </div>
+    ${reviewsHtml}
+    <div class="review-form">
+      <div class="review-form-title">LEAVE A REVIEW</div>
+      <div class="review-form-stars" id="formStars">
+        ${[1,2,3,4,5].map(i => `<button class="star-btn" data-rating="${i}" onclick="setFormRating(${i})">&#x2606;</button>`).join('')}
+      </div>
+      <textarea class="review-textarea" id="formText" placeholder="Write your review..."></textarea>
+      <button class="review-submit-btn" id="formSubmit" onclick="submitReview()">Submit Review</button>
+    </div>
+  `;
+}
+
+// ============================================================
+// INTERACTIONS
+// ============================================================
+function setMode(mode) {
+  if (mode === 'wot' && !userNpub) {
+    showNpubModal();
+    return;
+  }
+  currentMode = mode;
+  document.getElementById('btnPublic').className = mode === 'public' ? 'toggle-btn active-public' : 'toggle-btn inactive';
+  document.getElementById('btnWot').className = mode === 'wot' ? 'toggle-btn active-wot' : 'toggle-btn inactive';
+  document.getElementById('wotBanner').className = mode === 'wot' ? 'wot-banner visible' : 'wot-banner';
+  renderSkillGrid();
+  if (selectedSkill) renderDetail(selectedSkill);
+}
+
+function showNpubModal() {
+  document.getElementById('nsecInput').value = userNsec;
+  document.getElementById('derivedPubkey').style.display = userNpub ? 'block' : 'none';
+  if (userNpub) document.getElementById('derivedPubkey').textContent = 'Public key: ' + userNpub.slice(0, 16) + '...' + userNpub.slice(-4);
+  document.getElementById('npubModal').classList.add('visible');
+  document.getElementById('nsecInput').focus();
+}
+
+function closeNpubModal() {
+  document.getElementById('npubModal').classList.remove('visible');
+}
+
+function deriveNpub(nsec) {
+  // In production: real bech32 decode + secp256k1 derivation
+  // For demo: deterministic mock derivation from nsec
+  let hash = 0;
+  for (let i = 0; i < nsec.length; i++) { hash = ((hash << 5) - hash) + nsec.charCodeAt(i); hash |= 0; }
+  const hex = Math.abs(hash).toString(16).padStart(8, '0');
+  return 'npub1' + hex.repeat(8).slice(0, 59);
+}
+
+function confirmNpub() {
+  const input = document.getElementById('nsecInput');
+  const val = input.value.trim();
+  if (!val.startsWith('nsec1') || val.length < 10) {
+    input.style.borderColor = '#b83a1a';
+    input.setAttribute('placeholder', 'Must start with nsec1...');
+    return;
+  }
+  userNsec = val;
+  userNpub = deriveNpub(val);
+  closeNpubModal();
+  updateNpubIndicator();
+  setMode('wot');
+}
+
+function updateNpubIndicator() {
+  const el = document.getElementById('npubIndicator');
+  const signInBtn = document.getElementById('signInBtn');
+  if (userNpub) {
+    const short = userNpub.slice(0, 12) + '...' + userNpub.slice(-4);
+    el.innerHTML = '&#x1F511; ' + short;
+    el.title = 'Signed in as ' + userNpub.slice(0, 20) + '... (click to change)';
+    el.classList.add('visible');
+    if (signInBtn) signInBtn.classList.add('hidden');
+  } else {
+    el.classList.remove('visible');
+    if (signInBtn) signInBtn.classList.remove('hidden');
+  }
+}
+
+function setSort(sort) {
+  currentSort = sort;
+  renderSortButtons();
+  renderSkillGrid();
+}
+
+function setType(type) {
+  currentType = type;
+  currentCategory = 'All';
+  renderTypeTabs();
+  renderCategories();
+  renderSkillGrid();
+}
+
+function setCategory(cat) {
+  currentCategory = cat;
+  renderCategories();
+  renderSkillGrid();
+}
+
+function filterItems() {
+  searchQuery = document.getElementById('searchInput').value;
+  renderSkillGrid();
+}
+
+function openDetail(skillId) {
+  selectedSkill = getActiveData().find(s => s.id === skillId);
+  if (!selectedSkill) return;
+  renderDetail(selectedSkill);
+  document.getElementById('overlay').classList.add('visible');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDetail() {
+  document.getElementById('overlay').classList.remove('visible');
+  document.body.style.overflow = '';
+  selectedSkill = null;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeDetail(); closeNpubModal(); }
+});
+document.getElementById('nsecInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') confirmNpub();
+});
+document.getElementById('nsecInput').addEventListener('input', e => {
+  const val = e.target.value.trim();
+  const derived = document.getElementById('derivedPubkey');
+  if (val.startsWith('nsec1') && val.length >= 10) {
+    const npub = deriveNpub(val);
+    derived.textContent = 'Derived public key: ' + npub.slice(0, 16) + '...' + npub.slice(-4);
+    derived.style.display = 'block';
+    e.target.style.borderColor = '#2d6a1e';
+  } else {
+    derived.style.display = 'none';
+    e.target.style.borderColor = val.length > 0 ? '#b83a1a' : 'var(--border)';
+  }
+});
+
+// ============================================================
+// REVIEW FORM + VERIFICATION STEPPER
+// ============================================================
+let formRating = 0;
+
+function setFormRating(rating) {
+  formRating = rating;
+  document.querySelectorAll('#formStars .star-btn').forEach((btn, i) => {
+    btn.innerHTML = i < rating ? '&#x2605;' : '&#x2606;';
+    btn.classList.toggle('active', i < rating);
+  });
+}
+
+function submitReview() {
+  const text = document.getElementById('formText').value.trim();
+  if (!formRating) { alert('Please select a star rating.'); return; }
+  if (!text) { alert('Please write a review.'); return; }
+  if (!userNpub) { showNpubModal(); return; }
+  pendingReview = { rating: formRating, content: text, skillId: selectedSkill.id };
+  showVerificationStepper(text);
+}
+let pendingReview = null;
+
+function showVerificationStepper(reviewText) {
+  const steps = [
+    { id: 'membership', label: 'WoT Membership', desc: 'Proving you are in the trust graph', time: 1200 },
+    { id: 'interaction', label: 'Interaction Proof', desc: 'Verifying blind-signed usage receipt', time: 1600 },
+    { id: 'timeblind', label: 'TimeBlind Range', desc: 'Blurring timestamp to weekly epoch', time: 900 },
+    { id: 'nullifier', label: 'Uniqueness Check', desc: 'Computing epoch-scoped nullifier', time: 1100 },
+    { id: 'admit', label: 'Gateway Admission', desc: 'Submitting proof bundle for verification', time: 1400 }
+  ];
+
+  const stepsHtml = steps.map(s =>
+    `<div class="verify-step" id="vs-${s.id}">
+      <div class="verify-circle" id="vc-${s.id}"><span>&#x25CB;</span></div>
+      <div class="verify-step-info">
+        <div class="verify-step-label">${s.label}</div>
+        <div class="verify-step-desc">${s.desc}</div>
+      </div>
+      <div class="verify-status" id="vstat-${s.id}">waiting</div>
+    </div>`
+  ).join('');
+
+  const overlay = document.createElement('div');
+  overlay.className = 'verify-overlay';
+  overlay.id = 'verifyOverlay';
+  overlay.innerHTML = `<div class="verify-box">
+    <div class="verify-title">&#x1F50F; GENERATING PROOF BUNDLE</div>
+    <div class="verify-steps">${stepsHtml}</div>
+    <div class="verify-result" id="verifyResult" style="display:none"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+
+  runVerificationSteps(steps, reviewText);
+}
+
+async function runVerificationSteps(steps, reviewText) {
+  for (let i = 0; i < steps.length; i++) {
+    const s = steps[i];
+    const circle = document.getElementById('vc-' + s.id);
+    const step = document.getElementById('vs-' + s.id);
+    const stat = document.getElementById('vstat-' + s.id);
+
+    step.classList.add('running');
+    circle.classList.add('active');
+    circle.innerHTML = '&#x23F3;';
+    stat.textContent = 'proving...';
+    if (s.id === 'admit') stat.textContent = 'verifying...';
+
+    await new Promise(r => setTimeout(r, s.time));
+
+    circle.classList.remove('active');
+    circle.classList.add('done');
+    circle.innerHTML = '&#x2713;';
+    step.classList.remove('running');
+    step.classList.add('done');
+    stat.textContent = 'passed';
+  }
+
+  await new Promise(r => setTimeout(r, 500));
+
+  const result = document.getElementById('verifyResult');
+  result.style.display = 'block';
+  result.innerHTML = `
+    <div class="verify-result-msg success">&#x2705; REVIEW ADMITTED</div>
+    <p style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:14px;">
+      Proof bundle verified. Review held for batch release to break timing correlation.
+    </p>
+    <button class="verify-close-btn" onclick="closeVerification()">Done</button>
+  `;
+}
+
+function closeVerification() {
+  const overlay = document.getElementById('verifyOverlay');
+  if (overlay) overlay.remove();
+
+  // Save the review into the item's data
+  if (pendingReview) {
+    const allData = [...SKILLS, ...CONNECTORS];
+    const item = allData.find(s => s.id === pendingReview.skillId);
+    if (item) {
+      const today = new Date().toISOString().split('T')[0];
+      const weekNum = 'W' + String(Math.ceil((new Date().getTime() - new Date(new Date().getFullYear(),0,1).getTime()) / 604800000)).padStart(2,'0') + '-' + new Date().getFullYear();
+      // Add to public reviews
+      item.publicReviews.unshift({
+        author: userNpub.slice(0, 12) + '...',
+        rating: pendingReview.rating,
+        content: pendingReview.content,
+        date: today,
+        suspicious: false
+      });
+      // Add to WoT reviews
+      const anonHash = Math.abs([...userNpub].reduce((h, c) => ((h << 5) - h) + c.charCodeAt(0), 0)).toString(16).slice(0, 4);
+      item.wotReviews.unshift({
+        anonId: anonHash.slice(0,2) + '..' + anonHash.slice(2,4),
+        rating: pendingReview.rating,
+        content: pendingReview.content,
+        date: weekNum,
+        distance: 1,
+        proof: { membership: true, interaction: true, timeblind: true, nullifier: true, k_met: true, anon_set: 256 }
+      });
+      // Re-render detail panel and grid to reflect new rating
+      selectedSkill = item;
+      renderDetail(item);
+      renderSkillGrid();
+      // Scroll to reviews section so the new review is visible
+      setTimeout(() => {
+        const rh = document.querySelector('.reviews-header');
+        if (rh) rh.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+    pendingReview = null;
+  }
+
+  formRating = 0;
+  document.getElementById('formText').value = '';
+  document.querySelectorAll('#formStars .star-btn').forEach((btn) => {
+    btn.innerHTML = '&#x2606;';
+    btn.classList.remove('active');
+  });
+}
+
+// ============================================================
+// INIT
+// ============================================================
+renderTypeTabs();
+renderCategories();
+renderSortButtons();
+renderSkillGrid();
+</script>
+</body>
+</html>
