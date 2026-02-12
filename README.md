@@ -42,7 +42,7 @@ All private data stays on your device. The server only sees proofs and public in
 ### General
 
 **Do I need to be part of a Web of Trust to leave a review?**
-Yes. Every review requires a ZK proof that you belong to a relevant WoT cohort, built from the Nostr social graph. You need a Nostr identity and enough social connections so that the anonymity set meets the minimum threshold (default 50 members). If the cohort is too small, your review will be rejected to protect your privacy — the system won't publish a review if the crowd isn't large enough to hide in.
+Yes — and this is a hard requirement, not a filter. You need a Nostr account, and other people need to follow you (directly or indirectly). The system builds groups ("cohorts") from the Nostr follow graph, and you must be in one to submit a review. If you're not connected to anyone, or your group has fewer than 50 people, your review is rejected — it won't even be held for later. This is intentional: the anonymity guarantee depends on having a crowd to hide in, and the trust signal depends on social proximity being real.
 
 **What's the minimum needed to submit a review?**
 You need all of the following: (1) a Nostr identity, (2) enough social connections that your cohort has at least 50 members, (3) an actual visit to the business to get an interaction receipt, (4) your visit falls within an active time window, (5) you haven't already reviewed that business this period, and (6) the business has enough total reviews in the window (at least 20) for batch release. If any of these aren't met, the review is either rejected or held.
@@ -110,6 +110,15 @@ Your location issues blind-signed interaction receipts. The receipt proves a vis
 
 **What is a "cohort"?**
 The group of people in your corner of the social network. When you leave a review, you prove you're *someone* in this group without saying who. The bigger the group, the harder it is to figure out which one you are.
+
+**How do cohorts and Merkle trees work?**
+Think of it like a school roster. For each business, Arrival takes the Nostr follow graph and builds three lists — people within 1 hop of the reader (d<=1), within 2 hops (d<=2), and within 3 hops (d<=3). Each list is a cohort.
+
+Now, instead of publishing the full list (which would be a privacy problem), Arrival feeds the list into a Merkle tree. A Merkle tree takes all the members, hashes them in pairs, then hashes those results in pairs, and so on, until there's one single hash at the top — the "root." The root is published. The full list is not.
+
+When you want to prove you're on the list, you don't reveal your name. Instead, you show a short "path" — just a few hashes from your spot in the tree up to the root. The math proves you're in the tree, but doesn't reveal where in the tree (or who you are). And because it's wrapped in a zero-knowledge proof, no one even sees the path — they just see "yes, this person is a member."
+
+So there aren't thousands of cohorts. For each business, there are just three trees (one per distance tier). Each tree can have hundreds or thousands of members. The branches aren't separate cohorts — they're just the internal structure that makes the membership proof fast and private.
 
 **What is a "Web of Trust"?**
 It's your social network on Nostr, built from who follows whom. Arrival uses these connections to figure out how close a reviewer is to you socially.
