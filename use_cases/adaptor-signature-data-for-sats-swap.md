@@ -1,42 +1,73 @@
-# Project 4: Adaptor Signature Data-for-Sats Swap
+# Atomic data-for-payment swaps: trustless digital commerce between agents
 
-**Complexity:** Simple — 9 hours
+## The problem
 
-## Overview
+When two AI agents want to exchange data for payment, both sides face the same trust dilemma. If the buyer pays first, the seller might never deliver. If the seller delivers first, the buyer might never pay. And any escrow or intermediary introduces a third party who could steal from both sides, charge fees, or go offline.
 
-Two agents atomically exchange data for Bitcoin payment — either both get what they want or neither does — without any trusted intermediary.
+This isn't a niche problem -- it's the fundamental barrier to peer-to-peer digital commerce:
 
-## ZK Primitive
+- **Escrow services are centralized trust bottlenecks**: Every marketplace that handles data-for-payment exchanges (Fiverr, AWS Marketplace, API aggregators) acts as a trusted intermediary. They take a cut, they set the rules, and if they go down, no one can transact.
+- **Reputation systems are gameable**: Without a trustless mechanism, buyers and sellers rely on reviews and ratings -- which can be faked, gamed, or manipulated by the platform itself.
+- **Partial delivery is impossible to adjudicate**: If an agent delivers "data" but the data is garbage, who decides? Traditional systems require human arbitrators or AI judges, both of which are expensive and unreliable.
 
-Schnorr adaptor signatures. Agent A (data seller) creates a partial signature on a payment transaction locked to secret t; Agent B (buyer) can only claim payment by revealing t, which simultaneously unlocks the encrypted data.
+The fundamental gap: there is no way for two agents to exchange a digital asset for a payment where the exchange is guaranteed to be all-or-nothing, without trusting anyone.
 
-## Libraries
+## How it works (conceptually, not technically)
 
-- `musig2` Rust crate (supports adaptor signatures)
-- `secp256k1-zkp` for low-level operations
-- `rust-bitcoin` for transaction handling
+The idea is elegant:
 
-## Agent Use Case
+1. **The seller locks the data with a secret key**: The data is encrypted. Only someone who knows the secret can decrypt it.
+2. **The buyer creates a payment locked to the same secret**: The payment is structured so that claiming it requires revealing the secret.
+3. **When the seller claims payment, they reveal the secret**: By taking the money, the seller automatically gives the buyer the decryption key.
+4. **Either both sides complete, or neither does**: If the seller doesn't claim payment, the buyer's funds return after a timeout. If the seller claims, the buyer gets the key.
 
-Agent A has a trained model or dataset. Agent B wants to buy it. A encrypts the data with key derived from t, publishes adaptor signature. B verifies the adaptor, signs and broadcasts. A extracts B's contribution to complete payment, simultaneously revealing t, which B uses to decrypt.
+No escrow. No intermediary. No trust required. The cryptographic structure of the transaction enforces fairness.
 
-## Bitcoin Integration
+## Why this changes the game
 
-Native on-chain or Lightning payment with adaptor signatures.
+### For data sellers (AI agents with models, datasets, or compute results)
+- You get paid the instant you deliver. No waiting for escrow release, no disputes, no chargebacks.
+- Your data stays encrypted until payment is confirmed. You never give away anything for free.
+- You don't need a marketplace or platform. Two agents can transact directly, peer-to-peer.
 
-## Build Breakdown
+### For data buyers
+- You never pay for nothing. If the seller doesn't deliver, your funds come back automatically.
+- You can verify the encrypted data matches what was promised before committing to the swap.
+- No platform fees. No account required. No KYC. Just a direct exchange.
 
-| Phase | Time |
-|-------|------|
-| Adaptor signature generation | 3h |
-| Encrypted data bundle | 1.5h |
-| Atomic swap protocol | 2.5h |
-| End-to-end demo | 2h |
+### For the agent economy
+- Removes the need for trusted marketplaces as intermediaries in agent-to-agent commerce.
+- Enables instant, global, peer-to-peer trading of any digital asset between any two agents.
+- The completed transaction looks like a normal payment on the Bitcoin network -- no observer can tell a data exchange occurred.
 
-## What Makes It Unique
+## Use case scenarios
 
-True atomic data commerce between AI agents on Bitcoin without escrow services or trusted third parties.
+### Trained model marketplace
+Agent A spent GPU time training a specialized sentiment model. Agent B wants to buy it. The atomic swap ensures Agent B only pays if the model file is actually delivered, and Agent A only reveals the model if payment is locked and guaranteed.
 
-## Demo
+### Private dataset trading
+A data collection agent has curated a labeled dataset of 100,000 images. A research agent wants to purchase it. The swap ensures neither party can cheat -- the dataset decryption key is revealed at the exact moment payment completes.
 
-Two terminal agents negotiating, Agent A posting adaptor-locked data, Agent B paying, both receiving their side atomically.
+### Compute result delivery
+An agent performs an expensive computation (protein folding simulation, 3D rendering, data analysis). The requesting agent pays only upon delivery of the result. The computing agent is guaranteed payment the instant it delivers.
+
+### Bug bounty disclosure
+A security agent discovers a vulnerability in another agent's system. The atomic swap enables responsible disclosure: the vulnerability details are revealed simultaneously with the bounty payment. Neither side can cheat.
+
+### API credential provisioning
+An agent provisions temporary access credentials for a service. A purchasing agent pays for 24-hour access. The swap atomically exchanges valid credentials for payment.
+
+## What this doesn't solve (and that's okay)
+
+- **Data quality verification**: The swap guarantees delivery but not quality. The buyer gets the data, but it might not be useful. Reputation systems and repeated interactions help here.
+- **Partial delivery**: The protocol is all-or-nothing. It doesn't support streaming data or incremental payment. That's a separate problem.
+- **Intellectual property protection**: Once the buyer has the data, nothing prevents resale. The swap protects the exchange, not the IP.
+- **Offline agents**: Both agents need to be available to complete the interactive protocol. If one goes offline mid-swap, it resolves after a timeout.
+
+## Who this serves
+
+- AI agents that want to trade digital assets (models, datasets, compute results) without trusting a marketplace
+- Service providers that want guaranteed payment upon delivery
+- Buyers that want guaranteed delivery upon payment
+- Any two parties that need trustless digital commerce without intermediaries
+- The broader agent economy that needs peer-to-peer exchange primitives
