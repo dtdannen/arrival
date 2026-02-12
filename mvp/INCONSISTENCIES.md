@@ -1,7 +1,16 @@
 # MVP Spec Inconsistencies and Gaps
 
-This document intentionally ignores implementation timelines and scheduling.
-Focus: cryptographic/protocol correctness, stack fit, and cross-doc consistency.
+This document focuses on **cryptographic/protocol correctness, stack fit, and cross-doc consistency**. The following are explicitly out of scope:
+
+1. **Testing requirements** — test coverage gaps, test plans, and test matrices are not tracked here.
+2. **Estimated coding or dev time** — no time estimates or implementation scheduling.
+
+## Conventions
+
+- **Never delete resolved issues.** Mark them with ~~strikethrough~~ and `RESOLVED`, then add a `**Resolution**` block documenting the decision and rationale. This preserves the decision history so we can revisit *why* choices were made.
+- **Issue numbers are stable IDs, not sequence positions.** Numbers may appear out of order within severity sections because new issues are appended. Never renumber — other docs and conversations may reference these IDs.
+- **Each issue has two sections**: a full description (in the severity-grouped section above) and a solution options summary (in "Solution Options by Issue" below). For resolved issues, the description section carries the full resolution narrative; the solution options section carries the concise decision record.
+- **Severity tiers** (Critical / High / Medium) reflect protocol impact, not implementation effort.
 
 ## Critical
 
@@ -59,6 +68,44 @@ Which is authoritative for `k_min` enforcement? If the verifier trusts the clien
 
 **Affected files**: `09-event-and-api-spec.md`, `02-architecture.md`, `03-proof-spec.md`
 
+### 15. Admission/Publication Lifecycle Is Contradictory
+
+The architecture and proof spec model a binary accept/reject outcome with immediate publication:
+
+- `02-architecture.md` step 8: "If admitted, review is indexed and published with verification badges."
+- `03-proof-spec.md` admission pseudocode ends with `accept()` — no intermediate state.
+- `09-event-and-api-spec.md` verification result only has `accepted` (bool) with no held/deferred state.
+
+But `11-time-window-policy.md` requires a hold/defer + batch release lifecycle:
+
+- "Hold all admitted reviews until the time window closes" (batch release rule 1)
+- "Verify `t_min` is met before releasing the batch" (batch release rule 2)
+- "Window with fewer than `t_min` receipts: review held, not published" (test requirement 4)
+
+These are contradictory. A review can pass all proof checks (admitted) but still not be publishable yet (window open, or `t_min` not met). The spec has no state for this. The verification result object, the API response, the storage model, and the admission pseudocode all need a `held`/`deferred` state between admission and publication.
+
+**Resolution needed**: Add a three-state lifecycle (rejected / admitted-held / published) across architecture, proof spec, API spec, and storage model. Define what the gateway returns to the client when a review is admitted but held.
+
+**Affected files**: `02-architecture.md`, `03-proof-spec.md`, `09-event-and-api-spec.md`, `11-time-window-policy.md`
+
+### 16. Time-Window Proof Inputs Don't Match API/Proof Schema
+
+`11-time-window-policy.md` defines three public inputs for the time-window circuit:
+
+1. `time_window_id`
+2. `window_start` (unix timestamp)
+3. `window_end` (unix timestamp)
+
+The circuit literally requires `window_start` and `window_end` to perform the range check (`LessEqThan(32): window_start <= t` and `t <= window_end`).
+
+But `03-proof-spec.md` public inputs only list `time_window_id`, and `09-event-and-api-spec.md` `proof_bundle` fields only include `time_window_id`. Neither carries `window_start` or `window_end`.
+
+Without these values in the proof bundle and public inputs, the circuit cannot be verified. The verifier needs the public inputs that were used during proving.
+
+**Resolution needed**: Add `window_start` and `window_end` to both `03-proof-spec.md` public inputs and `09-event-and-api-spec.md` `proof_bundle` fields. The verifier must also confirm these match the server's authoritative window bounds for the given `time_window_id`.
+
+**Affected files**: `03-proof-spec.md`, `09-event-and-api-spec.md`, `11-time-window-policy.md`
+
 ## High
 
 ### 5. Cashu Interaction Receipt Issuance Flow Is Undefined
@@ -93,6 +140,55 @@ This does not change the MVP decision to defer RISC Zero as primary, but it does
 **Resolution needed**: Update the RISC Zero evaluation text to remove Bonsai as an active option and align all remote proving references with current Boundless documentation.
 
 **Affected files**: `07-risc0-evaluation.md`
+
+### 17. Window Authority Conflicts Across Docs
+
+Three documents give contradictory answers about who determines time windows and what sizes are available:
+
+- `02-architecture.md` step 4: "Client **selects** time window and constructs TimeBlind witness."
+- `11-time-window-policy.md`: "Time windows are **system-calculated and uniform per subject**. All reviewers for a given subject in a given period use the same window. Per-reviewer window variation is not allowed."
+- `08-open-decisions.md` lists window options as "weekly only" or "weekly + monthly" (two sizes).
+- `11-time-window-policy.md` window size table includes four sizes: weekly, biweekly, monthly, and quarterly.
+
+These can't all be true. Either the client selects a window or the system assigns one. Either there are two window sizes or four.
+
+**Resolution needed**: Align all docs on window authority (system-assigned, per `11-time-window-policy.md`) and available window sizes. Update `02-architecture.md` submission flow and close the relevant open decision in `08-open-decisions.md`.
+
+**Affected files**: `02-architecture.md`, `08-open-decisions.md`, `11-time-window-policy.md`
+
+### 18. Submission Signing/Authenticity Path Is Missing
+
+`04-implementation-plan.md` step 3 lists "proof bundle packaging and signing" as a deliverable. The README references a "one-time review posting key" model. But:
+
+- `09-event-and-api-spec.md` has `posting_pubkey` as a field but no `signature` field.
+- `02-architecture.md` verification pipeline has no signature verification step.
+
+A `posting_pubkey` without a corresponding signature proves nothing — anyone could submit a review claiming any pubkey. The gateway has no way to verify that the submitter controls the claimed posting key. This is needed to prevent review content tampering and replay of someone else's proof bundle with different content.
+
+**Resolution needed**: Add a `signature` field to the submission event (signed by `posting_pubkey` over the review content and proof bundle). Add a signature verification step to the verification pipeline.
+
+**Affected files**: `09-event-and-api-spec.md`, `02-architecture.md`, `04-implementation-plan.md`
+
+### 19. Cohort-Root Endpoint Contract Out of Sync With Time-Window Policy
+
+`11-time-window-policy.md` defines an expanded cohort-root endpoint response with fields needed for the time-window proof flow:
+
+```
+time_window_id, time_window_policy, window_start, window_end,
+receipt_volume_bucket, k_min, t_min
+```
+
+But `09-event-and-api-spec.md` `GET /v1/subjects/{subject_id}/cohort-root` only returns:
+
+```
+active root hash, cohort size, validity window, proof policy metadata (k_min, allowed windows)
+```
+
+The client cannot construct a valid time-window proof without `window_start`, `window_end`, and `time_window_id` from the server. The pre-submission disclosure flow (showing the reviewer their anonymity set size) also requires `receipt_volume_bucket` and `t_min`.
+
+**Resolution needed**: Backport the expanded endpoint response from `11-time-window-policy.md` into `09-event-and-api-spec.md` as the canonical contract.
+
+**Affected files**: `09-event-and-api-spec.md`, `11-time-window-policy.md`
 
 ## Medium
 
@@ -334,3 +430,59 @@ Expose coarse timestamps with randomized jittered publication schedule.
 
 Recommended:
 Option A plus Option C for stronger linkage resistance.
+
+### 15. Admission/Publication Lifecycle Is Contradictory
+
+Option A:
+Add a three-state lifecycle: `rejected` / `admitted` (held) / `published`. Gateway returns `admitted` with a hold notice when proof checks pass but window is still open or `t_min` not met. Add `status` field to reviews table. Batch release job transitions `admitted` → `published` when window closes and `t_min` is met.
+
+Option B:
+Separate admission from publication entirely. Gateway only admits (stores + deduplicates). A separate publication service handles batch release. API has distinct endpoints for submission status vs. published feed.
+
+Recommended:
+Option A for simplicity. The three-state model is the minimum viable change to reconcile the existing spec with batch release.
+
+### 16. Time-Window Proof Inputs Don't Match API/Proof Schema
+
+Option A:
+Add `window_start` and `window_end` to `03-proof-spec.md` public inputs and to `09-event-and-api-spec.md` `proof_bundle` fields. Verifier confirms submitted values match server's authoritative window bounds for the `time_window_id`.
+
+Option B:
+Verifier derives `window_start` and `window_end` from `time_window_id` server-side (never sent by client). Client still needs them for proof generation but gets them from the cohort-root endpoint.
+
+Recommended:
+Option A. The values are already public inputs to the circuit — they must be available to the verifier for proof verification. Sending them in the bundle is explicit and verifiable.
+
+### 17. Window Authority Conflicts Across Docs
+
+Option A:
+Align all docs to system-assigned windows per `11-time-window-policy.md`. Update `02-architecture.md` step 4 to say client *receives* (not selects) the window. Close the window policy open decision in `08-open-decisions.md` with the four-tier adaptive scheme.
+
+Option B:
+Revert to client-selected windows from a fixed menu (weekly/monthly only). Simpler but loses the adaptive anonymity protection.
+
+Recommended:
+Option A. System-assigned windows are a core privacy property — letting clients choose fragments the anonymity set.
+
+### 18. Submission Signing/Authenticity Path Is Missing
+
+Option A:
+Add `signature` field to `review_submission_v1` (Ed25519 signature by `posting_pubkey` over canonical serialization of content + proof bundle). Add signature verification as step 0 in the verification pipeline (before schema validation of proof contents).
+
+Option B:
+Remove `posting_pubkey` entirely and rely solely on proof bundle integrity (the ZK proof itself authenticates the submission). No separate signature needed if the proof binds to the content.
+
+Recommended:
+Option A. Signature verification is cheap, prevents content tampering, and provides a clear authenticity chain independent of proof validity. Option B is viable but couples content integrity to ZK verification ordering.
+
+### 19. Cohort-Root Endpoint Contract Out of Sync With Time-Window Policy
+
+Option A:
+Update `09-event-and-api-spec.md` cohort-root endpoint to match `11-time-window-policy.md`'s expanded response. Make `11-time-window-policy.md` reference the canonical API spec rather than defining its own.
+
+Option B:
+Split into two endpoints: cohort-root (membership data) and time-window-policy (window/receipt data). Keeps concerns separate.
+
+Recommended:
+Option A for MVP simplicity. A single endpoint gives the client everything needed for proof construction in one call.
+

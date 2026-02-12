@@ -1,5 +1,12 @@
 # MVP Plan V4: ZK-First Consumer/Local-Business Reviews
 
+## Scope of This Document
+
+This plan focuses on **technical design and protocol correctness**. The following are explicitly out of scope:
+
+1. **Testing requirements** — test plans, test matrices, and coverage criteria are tracked separately and not part of the technical design review.
+2. **Estimated coding or dev time** — no time estimates, sprint durations, or delivery forecasts. We care about getting the technical plan right, not predicting how long it takes.
+
 ## Objective
 
 Build an MVP that enforces:
