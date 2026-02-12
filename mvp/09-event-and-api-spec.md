@@ -93,13 +93,15 @@ Returns:
 
 ## Reject Code Canon
 
+Ordered to match the verification pipeline in `02-architecture.md` (one code per step):
+
 1. `invalid_signature`
 2. `invalid_schema`
-3. `inactive_root`
-4. `insufficient_anonymity_set`
-5. `invalid_membership_proof`
-6. `invalid_interaction_proof`
-7. `invalid_timeblind_proof`
-8. `duplicate_nullifier`
-9. `unsupported_proof_version`
-10. `invalid_epoch_context`
+3. `unsupported_proof_version`
+4. `invalid_epoch_context`
+5. `inactive_root`
+6. `insufficient_anonymity_set`
+7. `invalid_membership_proof`
+8. `invalid_interaction_proof`
+9. `invalid_timeblind_proof`
+10. `duplicate_nullifier`

@@ -252,7 +252,7 @@ In `09-event-and-api-spec.md`, `proof_version` is a **top-level field** on `revi
 
 **Affected files**: `09-event-and-api-spec.md`, `03-proof-spec.md`
 
-### 10. Verification Pipeline Step Count Mismatches
+### 10. ~~Verification Pipeline Step Count Mismatches~~ RESOLVED
 
 - `02-architecture.md` lists **8 steps** in the verification pipeline (including "Admit or reject")
 - `03-proof-spec.md` admission pseudocode has **7 logical checks**
@@ -261,6 +261,13 @@ In `09-event-and-api-spec.md`, `proof_version` is a **top-level field** on `revi
 The reject code `unsupported_proof_version` has no corresponding explicit step in the verification pipeline of `02-architecture.md`. Version validation is only mentioned in step 1 as part of "schema and version" but the reject code treats it as distinct from `invalid_schema`. These three documents should agree on the exact verification sequence.
 
 **Affected files**: `02-architecture.md`, `03-proof-spec.md`, `09-event-and-api-spec.md`
+
+**Resolution**:
+- **Decision**: Option A — single canonical verification pipeline with 1:1 step-to-reject-code mapping.
+- `02-architecture.md`: pipeline rewritten as 10 verification steps + admit/reject outcome. Split "schema and version" into separate steps (2 and 3). Moved `k_min` check from step 9 to step 6 (cheap metadata check before expensive ZK verifications). Each step now shows its corresponding reject code. Pipeline header references `03-proof-spec.md` as canonical pseudocode and `09-event-and-api-spec.md` for reject codes.
+- `09-event-and-api-spec.md`: reject codes reordered to match pipeline step sequence. Added header noting the ordering correspondence.
+- `03-proof-spec.md`: no changes needed — pseudocode was already correct and served as the reference for the alignment.
+- Spec files updated: `02-architecture.md`, `09-event-and-api-spec.md`.
 
 ### 11. Receipt Expiration vs. Epoch Boundary Interaction
 
@@ -347,16 +354,9 @@ Even if interaction timestamps are protected in proofs, exact submission and pub
 
 **Decision**: Option A — `proof_version` remains top-level, and the gateway version-gates before parsing `proof_bundle`.
 
-### 10. Verification Pipeline Step Count Mismatches
+### 10. ~~Verification Pipeline Step Count Mismatches~~ RESOLVED
 
-Option A:
-Define a single canonical verification state machine with one reject code per step.
-
-Option B:
-Keep separate docs but link each reject code to explicit pipeline step IDs.
-
-Recommended:
-Option A and generate all docs from the same canonical checklist/table.
+**Decision**: Option A — single canonical pipeline (10 verification steps, 10 reject codes, 1:1 mapping). Pseudocode in `03-proof-spec.md` is the canonical source; `02-architecture.md` pipeline and `09-event-and-api-spec.md` reject codes aligned to match.
 
 ### 11. Receipt Expiration vs. Epoch Boundary Interaction
 

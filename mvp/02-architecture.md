@@ -57,16 +57,19 @@
 
 ## Verification Pipeline
 
-1. Verify `signature` against `posting_pubkey` over canonical body serialization. Reject if invalid.
-2. Validate proof bundle schema and version.
-3. Derive authoritative `epoch_id` from `subject_id` and epoch policy context; reject if proof public input `epoch_id` mismatches.
-4. Verify subject root exists and is active.
-5. Verify WoT membership proof against active root.
-6. Verify interaction receipt signature/proof.
-7. Verify time-window proof and policy window limits.
-8. Compute and check nullifier uniqueness in `(subject_id, epoch_id)` using the authoritative derived `epoch_id`.
-9. Enforce `k_min` threshold from root metadata; below-threshold submissions are hard-rejected (not deferred).
-10. Admit or reject.
+Steps are ordered cheapest-first. Each step maps to exactly one reject code (see `09-event-and-api-spec.md` Reject Code Canon). The canonical pseudocode is in `03-proof-spec.md`.
+
+1. Verify `signature` against `posting_pubkey` over canonical body serialization. → `invalid_signature`
+2. Validate proof bundle schema. → `invalid_schema`
+3. Validate `proof_version` is supported. → `unsupported_proof_version`
+4. Derive authoritative `epoch_id` from `subject_id` and epoch policy context; reject if proof public input mismatches. → `invalid_epoch_context`
+5. Verify subject root exists and is active. → `inactive_root`
+6. Enforce `k_min` threshold from root metadata; below-threshold submissions are hard-rejected (not deferred). → `insufficient_anonymity_set`
+7. Verify WoT membership proof against active root. → `invalid_membership_proof`
+8. Verify interaction receipt signature/proof. → `invalid_interaction_proof`
+9. Verify time-window bounds match and time-window proof. → `invalid_timeblind_proof`
+10. Check nullifier uniqueness in `(subject_id, epoch_id)` using the authoritative derived `epoch_id`. → `duplicate_nullifier`
+11. Admit (held for batch release) or reject.
 
 ## Storage Model (MVP)
 
