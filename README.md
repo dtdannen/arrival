@@ -41,77 +41,139 @@ All private data stays on your device. The server only sees proofs and public in
 
 ### General
 
-**Do I need to be part of a Web of Trust to leave a review?**
-Yes — and this is a hard requirement, not a filter. You need a Nostr account, and other people need to follow you (directly or indirectly). The system builds groups ("cohorts") from the Nostr follow graph, and you must be in one to submit a review. If you're not connected to anyone, or your group has fewer than 50 people, your review is rejected — it won't even be held for later. This is intentional: the anonymity guarantee depends on having a crowd to hide in, and the trust signal depends on social proximity being real.
+<details>
+<summary><strong>Do I need to be part of a Web of Trust to leave a review?</strong></summary>
 
-**What's the minimum needed to submit a review?**
+Yes — and this is a hard requirement, not a filter. You need a Nostr account, and other people need to follow you (directly or indirectly). The system builds groups ("cohorts") from the Nostr follow graph, and you must be in one to submit a review. If you're not connected to anyone, or your group has fewer than 50 people, your review is rejected — it won't even be held for later. This is intentional: the anonymity guarantee depends on having a crowd to hide in, and the trust signal depends on social proximity being real.
+</details>
+
+<details>
+<summary><strong>What's the minimum needed to submit a review?</strong></summary>
+
 You need all of the following: (1) a Nostr identity, (2) enough social connections that your cohort has at least 50 members, (3) an actual visit to the business to get an interaction receipt, (4) your visit falls within an active time window, (5) you haven't already reviewed that business this period, and (6) the business has enough total reviews in the window (at least 20) for batch release. If any of these aren't met, the review is either rejected or held.
+</details>
 
 ### For Reviewers
 
-**How is my identity protected?**
+<details>
+<summary><strong>How is my identity protected?</strong></summary>
+
 Your persistent identity is never linked to your reviews. You generate a one-time posting key for each review, and all proofs are created locally on your device. The server only sees cryptographic proofs, not who you are.
+</details>
 
-**Can the business figure out who I am?**
+<details>
+<summary><strong>Can the business figure out who I am?</strong></summary>
+
 No. The ZK proof shows you're *someone* in the relevant social network who visited the business, but not *which* person. Reviews are also batch-released with randomized ordering so timing can't be used to narrow it down.
+</details>
 
-**What do I need to get started?**
+<details>
+<summary><strong>What do I need to get started?</strong></summary>
+
 A Nostr identity (for Web of Trust membership) and a visit to the business (to get a blind-signed interaction receipt). The app handles the cryptography.
+</details>
 
-**What happens if my phone is slow — can it generate the proofs?**
+<details>
+<summary><strong>What happens if my phone is slow — can it generate the proofs?</strong></summary>
+
 Proofs are generated locally using snarkjs in the browser via WASM. If your device can't handle it, there's an optional remote proving fallback — but the app will warn you about the privacy tradeoff.
+</details>
 
-**Can I edit or delete my review?**
+<details>
+<summary><strong>Can I edit or delete my review?</strong></summary>
+
 No. Each review is tied to a one-time nullifier for that business and time period. You get one review per business per epoch.
+</details>
 
-**Why can't I see my review immediately after submitting?**
+<details>
+<summary><strong>Why can't I see my review immediately after submitting?</strong></summary>
+
 Reviews are batch-released at the end of each time window to prevent timing-based deanonymization. Your review is held until enough other reviews exist (minimum threshold) and the window closes.
+</details>
 
 ### For Readers
 
-**What do the verification badges mean?**
+<details>
+<summary><strong>What do the verification badges mean?</strong></summary>
+
 Each review can show: a WoT badge (reviewer is in your social network), an interaction badge (they actually visited), and an anonymity-set badge (the reviewer pool was large enough to be meaningful).
+</details>
 
-**What does "distance" mean (d<=1, d<=2, d<=3)?**
+<details>
+<summary><strong>What does "distance" mean (d<=1, d<=2, d<=3)?</strong></summary>
+
 It's how many hops away the reviewer is in your social graph. d<=1 means someone you directly follow. d<=2 means a friend-of-a-friend. You can filter reviews by distance.
+</details>
 
-**Can I trust that reviews are from real customers?**
+<details>
+<summary><strong>Can I trust that reviews are from real customers?</strong></summary>
+
 Yes — every review includes a cryptographic proof of interaction (a blind-signed receipt from the business). Fake reviews without a real visit are rejected by the verification pipeline.
+</details>
 
-**Are there fake reviews?**
+<details>
+<summary><strong>Are there fake reviews?</strong></summary>
+
 Every review must pass four cryptographic checks before publication: WoT membership, verified visit, time-window proof, and uniqueness. Fabricating all of these is cryptographically infeasible.
+</details>
 
 ### For Skeptics / Technical Users
 
-**What do I have to trust?**
+<details>
+<summary><strong>What do I have to trust?</strong></summary>
+
 In local proving mode: the open-source client code, the circuit correctness, and the Semaphore v4 trusted setup ceremony (400+ participants). You do *not* need to trust a remote server with your private data.
+</details>
 
-**Is this open source?**
+<details>
+<summary><strong>Is this open source?</strong></summary>
+
 Yes. Reproducible builds let you verify that the deployed code matches the source.
+</details>
 
-**What's the "trusted setup" and should I worry about it?**
+<details>
+<summary><strong>What's the "trusted setup" and should I worry about it?</strong></summary>
+
 Arrival uses Semaphore v4's Groth16 ceremony, which had 400+ independent participants. As long as at least one participant was honest, the setup is secure. This is a widely accepted trust assumption in ZK systems.
+</details>
 
-**Can the system operator deanonymize me?**
+<details>
+<summary><strong>Can the system operator deanonymize me?</strong></summary>
+
 No. The operator sees proofs and public inputs only. Your identity secret never leaves your device. `created_at` timestamps are internal-only and never exposed via any API.
+</details>
 
-**What happens if an interaction receipt issuer is compromised?**
+<details>
+<summary><strong>What happens if an interaction receipt issuer is compromised?</strong></summary>
+
 Keyset rotation limits the blast radius to one time period. Compromised keysets can be revoked through the issuer registry.
+</details>
 
 ### For Businesses
 
-**Can I retaliate against a negative reviewer?**
-No. That's the point. The reviewer is cryptographically anonymous — you can verify they visited your business, but you cannot determine who they are.
+<details>
+<summary><strong>Can I retaliate against a negative reviewer?</strong></summary>
 
-**How do I know the reviewer actually visited?**
+No. That's the point. The reviewer is cryptographically anonymous — you can verify they visited your business, but you cannot determine who they are.
+</details>
+
+<details>
+<summary><strong>How do I know the reviewer actually visited?</strong></summary>
+
 Your location issues blind-signed interaction receipts. The receipt proves a visit happened without revealing which visitor left which review.
+</details>
 
 ## Key Concepts (ELI5)
 
-**What is a "cohort"?**
-The group of people in your corner of the social network. When you leave a review, you prove you're *someone* in this group without saying who. The bigger the group, the harder it is to figure out which one you are.
+<details>
+<summary><strong>What is a "cohort"?</strong></summary>
 
-**How do cohorts and Merkle trees work?**
+The group of people in your corner of the social network. When you leave a review, you prove you're *someone* in this group without saying who. The bigger the group, the harder it is to figure out which one you are.
+</details>
+
+<details>
+<summary><strong>How do cohorts and Merkle trees work?</strong></summary>
+
 Think of it like a school roster. For each business, Arrival takes the Nostr follow graph and builds three lists — people within 1 hop of the reader (d<=1), within 2 hops (d<=2), and within 3 hops (d<=3). Each list is a cohort.
 
 Now, instead of publishing the full list (which would be a privacy problem), Arrival feeds the list into a Merkle tree. A Merkle tree takes all the members, hashes them in pairs, then hashes those results in pairs, and so on, until there's one single hash at the top — the "root." The root is published. The full list is not.
@@ -119,33 +181,61 @@ Now, instead of publishing the full list (which would be a privacy problem), Arr
 When you want to prove you're on the list, you don't reveal your name. Instead, you show a short "path" — just a few hashes from your spot in the tree up to the root. The math proves you're in the tree, but doesn't reveal where in the tree (or who you are). And because it's wrapped in a zero-knowledge proof, no one even sees the path — they just see "yes, this person is a member."
 
 So there aren't thousands of cohorts. For each business, there are just three trees (one per distance tier). Each tree can have hundreds or thousands of members. The branches aren't separate cohorts — they're just the internal structure that makes the membership proof fast and private.
+</details>
 
-**What is a "Web of Trust"?**
+<details>
+<summary><strong>What is a "Web of Trust"?</strong></summary>
+
 It's your social network on Nostr, built from who follows whom. Arrival uses these connections to figure out how close a reviewer is to you socially.
+</details>
 
-**Who has to follow whom?**
+<details>
+<summary><strong>Who has to follow whom?</strong></summary>
+
 Nobody has to follow the business. What matters is that you (the reviewer) are connected in the Nostr social graph to the people who will read the review. If a reader follows your friend, and your friend follows you, you're two hops away (d<=2) from that reader.
+</details>
 
-**Why does the group need to be at least 50 people?**
+<details>
+<summary><strong>Why does the group need to be at least 50 people?</strong></summary>
+
 If only 3 people visited a restaurant last month, and an anonymous review appears, the owner can guess pretty easily who wrote it. The 50-person minimum (k_min) makes sure the crowd is big enough for real anonymity.
+</details>
 
-**What's a "nullifier"?**
+<details>
+<summary><strong>What's a "nullifier"?</strong></summary>
+
 A unique one-time token that proves "I already reviewed this place this period" without revealing who you are. It prevents double-reviewing while keeping you anonymous.
+</details>
 
-**What's a "blind signature"?**
+<details>
+<summary><strong>What's a "blind signature"?</strong></summary>
+
 When you visit a business, your app gets a digital stamp proving you were there — but the business can't connect that stamp to you later. It's like getting a hand stamp at a club while wearing a disguise.
+</details>
 
-**What does "zero-knowledge proof" mean?**
+<details>
+<summary><strong>What does "zero-knowledge proof" mean?</strong></summary>
+
 A way to prove a fact (like "I'm in this group" or "I visited this place") without revealing any details about yourself. The math checks out, but no private information is shared.
+</details>
 
-**What does "local proving" mean?**
+<details>
+<summary><strong>What does "local proving" mean?</strong></summary>
+
 All the cryptographic math runs on your own phone or laptop. Your private data never gets sent to a server. This is the default because it's the most private option.
+</details>
 
-**Why can't I see my review right away?**
+<details>
+<summary><strong>Why can't I see my review right away?</strong></summary>
+
 If your review appeared the second you submitted it, someone could match the timing to figure out who you are. Instead, reviews are collected and released all at once in a batch, in random order.
+</details>
 
-**What's an "epoch" or "time window"?**
+<details>
+<summary><strong>What's an "epoch" or "time window"?</strong></summary>
+
 A review period for a specific business. Depending on how busy the business is, this could be a week, two weeks, a month, or a quarter. You get one review per business per window.
+</details>
 
 ## Terms of Use
 
