@@ -155,7 +155,7 @@ A review is publishable only when `k >= k_min` AND `t >= t_min`.
 
 ### Relationship to Receipt Design
 
-The receipt must embed an issuance timestamp for this circuit to work. This constrains the receipt spec: the Cashu blind signature (or whatever receipt mechanism is used) must carry a timestamp that the prover can use as witness without revealing it to the verifier. See `INCONSISTENCIES.md` issue 5 for the broader receipt lifecycle design.
+The receipt must embed an issuance timestamp for this circuit to work. The blind-signed receipt system uses keyset rotation for temporal binding: the keyset used to sign a receipt encodes the time period of the interaction. The reviewer uses a timestamp within the keyset's validity period as the private witness. See `12-receipt-spec.md` for the full receipt lifecycle and temporal binding flow.
 
 ## Test Requirements
 

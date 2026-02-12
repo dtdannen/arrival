@@ -124,19 +124,23 @@ But `03-proof-spec.md` public inputs only listed `time_window_id`, and `09-event
 
 ## High
 
-### 5. Cashu Interaction Receipt Issuance Flow Is Undefined
+### 5. ~~Cashu Interaction Receipt Issuance Flow Is Undefined~~ RESOLVED
 
-The spec treats Cashu blind signatures as proof-of-interaction receipts, but Cashu is an **ecash protocol** designed for payments, not for proving you visited a business or purchased a product. Key gaps:
+The spec previously treated Cashu blind signatures as proof-of-interaction receipts, but Cashu is an ecash protocol designed for payments, not for proving interaction. The receipt lifecycle was entirely undefined.
 
-- **Who is the "mint"/issuer?** The business itself? A third party? A payment processor? `08-open-decisions.md` lists "accepted issuer governance" as open, but this is architecturally foundational, not a detail to defer.
-- **How does a blind signature prove interaction?** Cashu proves you received a token from a mint. It doesn't inherently prove you visited a physical location or purchased something. The spec never explains the actual issuance trigger or flow.
-- **No reviewer-binding rule is defined**: possession of a valid token is not the same as "this reviewer interacted." Without an explicit binding mechanism (for example, spend conditions tied to reviewer-controlled keys), receipt transferability weakens the interaction claim.
-- **Privacy tradeoff not acknowledged**: If a user reveals a DLEQ proof to contest a receipt, it breaks unlinkability. This is documented in Cashu's own protocol spec but not mentioned in `06-trust-model-and-risk-mitigation.md`.
-- **One receipt, one review**: `08-open-decisions.md` lists edge cases (refunds, chargebacks, disputes) but the core question -- how does a receipt get bound to a subject in the first place -- is never answered.
+**Resolution**:
+- **Decision**: Drop Cashu. Use blind signatures directly (without the ecash layer) as the receipt mechanism. Full lifecycle specified in new canonical file `12-receipt-spec.md`.
+- **Issuer**: The business/service provider (or their POS system), with signing keysets scoped per `subject_id`.
+- **Issuance trigger**: Completed transaction. Reviewer's client blinds a random secret, issuer signs, reviewer unblinds.
+- **Subject binding**: Issuer keys are scoped per `subject_id`; receipts don't cross subjects.
+- **Reviewer binding**: Soft binding — only the reviewer knows the secret `r`. One-receipt-one-review limits transfer incentive.
+- **One-receipt-one-review**: `receipt_hash = Hash(r)` checked against spent-receipts table at admission. Server-side enforced.
+- **Temporal binding**: Keyset rotation (e.g., daily). The keyset used at signing time encodes the interaction's time period. The verifier derives the timestamp range from `keyset_id`, providing the time-window proof its private witness without revealing exact timing.
+- **Privacy**: Issuer unlinkability via blind signatures — issuer cannot link unblinded receipt to the blinding request they signed.
+- **Trust model**: Receipt trust boundaries added to `06-trust-model-and-risk-mitigation.md`. Issuer collusion and keyset compromise added as residual risks.
+- Spec files updated: `README.md` (architectural commitment, core stack, canonical owners, folder org), `02-architecture.md` (component description), `06-trust-model-and-risk-mitigation.md` (trust boundaries, residual risks), `08-open-decisions.md` (closed resolved items, kept truly open items), `11-time-window-policy.md` (removed Cashu reference, linked to receipt spec).
 
-**Resolution needed**: Define the complete receipt lifecycle: who issues, what triggers issuance, how it binds to a subject and reviewer, and how the blind signature scheme maps to "proof of interaction."
-
-**Affected files**: `02-architecture.md`, `03-proof-spec.md`, `06-trust-model-and-risk-mitigation.md`, `08-open-decisions.md`
+**Affected files**: `README.md`, `02-architecture.md`, `06-trust-model-and-risk-mitigation.md`, `08-open-decisions.md`, `11-time-window-policy.md`, `12-receipt-spec.md`
 
 ### 6. ~~Trusted Setup Requirement Not Properly Acknowledged~~ RESOLVED
 
@@ -313,21 +317,9 @@ Even if interaction timestamps are protected in proofs, exact submission and pub
 
 **Decision**: Option A — removed `cohort_size` from client-submitted proof bundle. Verifier always uses server-side `k_size` from roots table. No client input trusted for `k_min` enforcement.
 
-### 5. Cashu Interaction Receipt Issuance Flow Is Undefined
+### 5. ~~Cashu Interaction Receipt Issuance Flow Is Undefined~~ RESOLVED
 
-Option A:
-Keep Cashu and define full lifecycle:
-- issuer role (who mints)
-- issuance trigger (what event proves interaction)
-- subject binding (`subject_id` commitment in receipt payload)
-- reviewer binding (spend condition tied to reviewer-controlled key)
-- one-receipt-one-review spend semantics
-
-Option B:
-Replace Cashu with direct signed interaction attestations (non-ecash), then prove attestation validity in-circuit or verifier.
-
-Recommended:
-Option A if anonymity-preserving transferable-token model is desired; Option B if simpler attestation flow is preferred over ecash complexity.
+**Decision**: Drop Cashu, use blind signatures directly. Full receipt lifecycle specified in `12-receipt-spec.md`: issuer identity, issuance flow, subject/reviewer binding, one-receipt-one-review spend semantics, keyset rotation for temporal binding, and privacy properties.
 
 ### 6. ~~Trusted Setup Requirement Not Properly Acknowledged~~ RESOLVED
 

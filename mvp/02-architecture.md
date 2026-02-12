@@ -12,7 +12,8 @@
    - builds cohort Merkle trees per distance tier (`d<=1`, `d<=2`, `d<=3`) for each subject
    - publishes roots and metadata including distance bucket and cohort size per tier
 4. `receipt-issuer` / `receipt-verifier`
-   - issues or validates interaction proofs (Cashu/blind-signature based)
+   - issues and validates blind-signed interaction receipts (see `12-receipt-spec.md`)
+   - issuer maintains per-subject keysets with temporal rotation
 5. `proof-engine`
    - generates membership/time/nullifier proof bundle
    - local-first, optional remote fallback

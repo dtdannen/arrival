@@ -23,6 +23,18 @@ Users additionally trust:
 
 Remote proving is therefore a privacy/censorship tradeoff, not a free optimization.
 
+## 3) Interaction receipt issuance
+
+Users trust:
+
+1. Issuer's signing system is not compromised (key security)
+2. Blinding scheme correctness (client-side crypto)
+3. Accepted issuer registry governance
+
+Users do not need to trust the issuer to protect their privacy — the blind signature scheme removes this trust requirement. The issuer cannot link a signed blinding request to the unblinded receipt presented at review time.
+
+See `12-receipt-spec.md` for the full receipt lifecycle and trust boundaries.
+
 ## Residual Risks
 
 1. Trusted setup compromise (mitigated by Semaphore v4's multi-participant ceremony; risk is non-zero but accepted)
@@ -30,6 +42,8 @@ Remote proving is therefore a privacy/censorship tradeoff, not a free optimizati
 3. Small anonymity sets in sparse cohorts
 4. WoT graph manipulation or poisoning
 5. Endpoint compromise on user device
+6. Issuer collusion (issuing receipts to non-customers; mitigated by issuer governance)
+7. Keyset compromise (fake receipts for one time period; mitigated by keyset rotation limiting blast radius)
 
 ## Mitigation Controls
 

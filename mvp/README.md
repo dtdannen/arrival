@@ -38,12 +38,13 @@ The objectives above are the product goals — what we are building and why. Des
 ## Architectural Commitments
 
 1. **Nostr is the WoT source.** The social graph is built from Nostr follow data. This is non-negotiable. Nostr-specific ingestion semantics (replaceable events, relay variance, deterministic resolution) must be fully specified.
-2. **Interaction proof mechanism is open.** The goal is "prove the reviewer interacted with the subject." We are not locked to Cashu or ecash specifically. If a simpler mechanism (e.g., signed attestations) achieves the same goal with less complexity, that's preferred.
+2. **Interaction receipts use blind signatures.** The goal is "prove the reviewer interacted with the subject without revealing reviewer identity." Blind signatures provide issuer unlinkability: the issuer signs a blinded value at interaction time and cannot link it to the unblinded receipt presented at review time. See `12-receipt-spec.md` for the full lifecycle.
 3. **One canonical spec per domain.** Each spec file owns its domain. Other files reference, not redefine. When conflicts arise, the canonical owner wins:
    - `02-architecture.md` → system components, submission flow, storage model
    - `03-proof-spec.md` → proof statements, public/private inputs, nullifier construction, admission policy
    - `09-event-and-api-spec.md` → API endpoints, event schemas, proof bundle fields, reject codes
    - `11-time-window-policy.md` → time-window circuit, adaptive window calculation, batch release policy
+   - `12-receipt-spec.md` → interaction receipt lifecycle, blind signature mechanism, issuer binding, spend semantics
    - `06-trust-model-and-risk-mitigation.md` → trust boundaries, residual risks, mitigations
 
 ## Non-Negotiable Requirements
@@ -59,7 +60,7 @@ The objectives above are the product goals — what we are building and why. Des
 1. `nostr-keys` for identity and signing
 2. `nostr-web-of-trust` for social graph
 3. Semaphore v4 (`@semaphore-protocol/*`) for ZK membership proofs + nullifiers
-4. Interaction receipts — mechanism open (see Architectural Commitments); must prove reviewer interacted with subject without revealing reviewer identity
+4. Blind-signed interaction receipts with keyset rotation for temporal binding (see `12-receipt-spec.md`)
 5. Custom Circom time-window circuit (`circomlib/comparators.circom`) for privacy-preserving timestamp range proofs
 
 ## Proving Policy
@@ -82,6 +83,7 @@ The objectives above are the product goals — what we are building and why. Des
 10. `mvp/09-event-and-api-spec.md`: submission payload and API contract
 11. `mvp/10-test-plan.md`: functional, adversarial, and privacy test coverage
 12. `mvp/11-time-window-policy.md`: time-window proof circuit, adaptive window calculation, `t_min` threshold, and batch release policy
+13. `mvp/12-receipt-spec.md`: interaction receipt lifecycle, blind signature mechanism, issuer/subject/reviewer binding, spend semantics
 
 ## Build Sequence
 

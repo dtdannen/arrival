@@ -31,9 +31,12 @@
 
 ## Receipt Decisions
 
-1. Accepted issuer list governance
-2. Receipt expiration policy
-3. One receipt to one review policy edge cases (refunds, chargebacks, disputes)
+Receipt lifecycle, mechanism (blind signatures), subject/reviewer binding, and spend semantics are now specified in `12-receipt-spec.md`. Remaining open items:
+
+1. Specific blind signature scheme (RSA blind signatures, BDH-based, etc.)
+2. Accepted issuer registry governance (who can register, vetting process)
+3. Keyset rotation schedule (daily recommended)
+4. Receipt expiration policy (how long after issuance a receipt remains usable)
 
 ## Security/Privacy Decisions
 
