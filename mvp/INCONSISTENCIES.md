@@ -137,6 +137,74 @@ Without the issuer side built, no receipts can be produced for reviewers. The pr
 - `README.md` Build Sequence: added step 3 ("Implement interaction receipt pipeline") as an explicit step before proof generation.
 - Spec files updated: `04-implementation-plan.md`, `05-sprint-plan.md`, `README.md`.
 
+### 21. ~~Proof Composition Strategy Not Decided~~ RESOLVED
+
+`08-open-decisions.md` listed "single combined bundle vs modular verifiers" as open. But the spec already implicitly assumed modular: `proof_bundle` has separate fields, the verification pipeline verifies each independently, and the circuits use different systems (Semaphore v4 Groth16, custom Circom, traditional RSA verification).
+
+**Affected files**: `08-open-decisions.md`, `03-proof-spec.md`, `09-event-and-api-spec.md`
+
+**Resolution**:
+- **Decision**: Modular verifiers. Membership (Semaphore v4 Groth16), time-window (custom Circom ZK), and interaction receipt (traditional RSA signature verification) are separate proofs with independent verification steps. Avoids custom trusted setup.
+- `08-open-decisions.md`: closed proof composition decision.
+- `03-proof-spec.md`: annotated each proof statement with its verification method (ZK vs. traditional).
+- `09-event-and-api-spec.md`: annotated each `proof_bundle` field with its proof type.
+- Spec files updated: `08-open-decisions.md`, `03-proof-spec.md`, `09-event-and-api-spec.md`.
+
+### 22. ~~`interaction_proof` Content and Verification Not Specified~~ RESOLVED
+
+The `proof_bundle` contained an `interaction_proof` field but its content was never defined. Two interpretations were possible: raw receipt data `(r, S, keyset_id)` with traditional verification, or a ZK proof of receipt possession. These have different privacy properties and implementation complexity.
+
+**Affected files**: `12-receipt-spec.md`, `03-proof-spec.md`, `09-event-and-api-spec.md`
+
+**Resolution**:
+- **Decision**: `interaction_proof` is raw receipt data `(r, S, keyset_id)`, verified by traditional RSA signature verification (not ZK).
+- **Privacy rationale**: The verifier sees `Hash(r)` regardless (for spent-receipt enforcement), so ZK would not provide meaningful additional anonymity. Issuer unlinkability and public unlinkability are preserved. The verifier is a trusted server component for MVP.
+- `12-receipt-spec.md`: added "Interaction Proof Design" section with privacy rationale. Refined privacy properties: replaced "verifier unlinkability" with "issuer-verifier unlinkability" and added "public unlinkability."
+- `03-proof-spec.md`: annotated Interaction proof statement as traditional verification with cross-reference.
+- `09-event-and-api-spec.md`: annotated `interaction_proof` field with content and verification method.
+- Spec files updated: `12-receipt-spec.md`, `03-proof-spec.md`, `09-event-and-api-spec.md`.
+
+### 23. ~~Blind Signature Scheme Not Selected~~ RESOLVED
+
+`08-open-decisions.md` and `12-receipt-spec.md` listed "Specific blind signature scheme" as open. Without this, the receipt issuer endpoint, client blinding code, and verification logic cannot be implemented.
+
+**Affected files**: `12-receipt-spec.md`, `08-open-decisions.md`
+
+**Resolution**:
+- **Decision**: RSA blind signatures (RSABSSA per IETF RFC 9474).
+- Battle-tested (Privacy Pass), well-understood security properties, TypeScript implementations available. No ZK-circuit-friendliness needed since interaction proof uses traditional signature verification.
+- `12-receipt-spec.md`: updated mechanism section to specify RSABSSA with rationale. Closed open item #1.
+- `08-open-decisions.md`: closed blind signature scheme decision.
+- Spec files updated: `12-receipt-spec.md`, `08-open-decisions.md`.
+
+### 24. ~~`epoch_id` and `time_window_id` Relationship Undefined~~ RESOLVED
+
+`11-time-window-policy.md` stated the relationship between `epoch_id` and `time_window_id` was an open design decision. Epochs were weekly (`hash(subject_id || iso_week)`) but time windows were adaptive (weekly/biweekly/monthly/quarterly), creating ambiguity about nullifier scope vs. batch release scope.
+
+**Affected files**: `02-architecture.md`, `11-time-window-policy.md`, `03-proof-spec.md`, `08-open-decisions.md`
+
+**Resolution**:
+- **Decision**: Unified — `epoch_id = hash(subject_id || time_window_id)`. Nullifier scope and batch release scope are always identical.
+- One review per identity per subject per time window. Changing window size changes re-review cadence (accepted tradeoff for simplicity). Larger anonymity sets per batch.
+- `02-architecture.md`: epoch formula changed from `hash(subject_id || iso_week)` to `hash(subject_id || time_window_id)`.
+- `11-time-window-policy.md`: replaced open design decision text with unified relationship documentation.
+- `03-proof-spec.md`: updated `epoch_id` reference in nullifier construction.
+- `08-open-decisions.md`: closed epoch granularity decision (unified with time window).
+- Spec files updated: `02-architecture.md`, `11-time-window-policy.md`, `03-proof-spec.md`, `08-open-decisions.md`.
+
+### 25. ~~Accepted Issuer Registry Governance Undefined~~ RESOLVED
+
+`08-open-decisions.md` and `12-receipt-spec.md` listed issuer registry governance as open. Without knowing the governance model, the registry schema and issuer onboarding flow cannot be implemented.
+
+**Affected files**: `12-receipt-spec.md`, `08-open-decisions.md`
+
+**Resolution**:
+- **Decision**: Admin-managed PostgreSQL table with manual registration for MVP.
+- An operator adds issuers and their keysets to the registry after vetting. No self-registration or on-chain attestation for MVP. Does not close the door on more decentralized governance post-MVP.
+- `12-receipt-spec.md`: added "Issuer Registry Governance (MVP)" subsection. Closed open item #2.
+- `08-open-decisions.md`: closed issuer registry governance decision.
+- Spec files updated: `12-receipt-spec.md`, `08-open-decisions.md`.
+
 ## High
 
 ### 5. ~~Cashu Interaction Receipt Issuance Flow Is Undefined~~ RESOLVED
@@ -426,3 +494,23 @@ Even if interaction timestamps are protected in proofs, exact submission and pub
 ### 20. ~~Receipt Issuance Pipeline Missing From Execution Docs~~ RESOLVED
 
 **Decision**: Add full receipt issuance pipeline (issuer endpoint, keyset management, issuer registry, spent-receipts store) as explicit deliverables in `04-implementation-plan.md` and `05-sprint-plan.md`. Added receipt pipeline step to `README.md` Build Sequence.
+
+### 21. ~~Proof Composition Strategy Not Decided~~ RESOLVED
+
+**Decision**: Modular verifiers. Membership (Semaphore v4 Groth16), time-window (custom Circom ZK), interaction receipt (traditional RSA verification). Avoids custom trusted setup.
+
+### 22. ~~`interaction_proof` Content and Verification Not Specified~~ RESOLVED
+
+**Decision**: `interaction_proof` is raw receipt data `(r, S, keyset_id)` with traditional RSA signature verification. ZK not needed — verifier sees `Hash(r)` regardless for spent-receipt enforcement. Issuer unlinkability and public unlinkability preserved.
+
+### 23. ~~Blind Signature Scheme Not Selected~~ RESOLVED
+
+**Decision**: RSA blind signatures (RSABSSA per IETF RFC 9474). Battle-tested, TypeScript implementations available, no ZK-circuit-friendliness needed.
+
+### 24. ~~`epoch_id` and `time_window_id` Relationship Undefined~~ RESOLVED
+
+**Decision**: Unified — `epoch_id = hash(subject_id || time_window_id)`. Nullifier scope = batch release scope. One review per identity per subject per window.
+
+### 25. ~~Accepted Issuer Registry Governance Undefined~~ RESOLVED
+
+**Decision**: Admin-managed PostgreSQL table with manual registration for MVP. No self-registration. Does not close door on decentralized governance post-MVP.

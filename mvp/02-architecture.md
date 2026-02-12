@@ -33,11 +33,13 @@
 
 `subject_id` is the reviewed entity key (business, product, location profile).
 
-`epoch` defaults to weekly bucket:
+`epoch_id` is unified with `time_window_id`:
 
-`epoch_id = hash(subject_id || iso_week)`
+`epoch_id = hash(subject_id || time_window_id)`
 
-`epoch_id` is server-authoritative. The gateway derives `epoch_id` from policy and context, and rejects submissions whose proof public input does not match the derived value.
+Since time windows are adaptive (weekly, biweekly, monthly, or quarterly per `11-time-window-policy.md`), the epoch scope adapts with them. This means one review per identity per subject per time window. The nullifier scope and batch release scope are always identical, which is simpler to implement and produces larger anonymity sets per batch.
+
+`epoch_id` is server-authoritative. The gateway derives `epoch_id` from the current `time_window_id` and rejects submissions whose proof public input does not match the derived value.
 
 ## Nostr Ingestion Rules
 

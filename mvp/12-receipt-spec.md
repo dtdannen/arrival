@@ -6,11 +6,18 @@ This document specifies the interaction receipt system: what a receipt proves, h
 
 The interaction receipt is the mechanism for MVP goal #3: "Proof of real interaction." A valid receipt proves that the reviewer interacted with the reviewed subject (purchased a product, used a service, visited a location) without revealing the reviewer's identity to the issuer, verifier, or public.
 
-## Mechanism: Blind Signatures
+## Mechanism: RSA Blind Signatures (RSABSSA)
 
-Receipts use blind signatures. The reviewer blinds a secret value before sending it to the issuer for signing. The issuer signs the blinded value without seeing the original. The reviewer unblinds the signature, producing a valid signature over their secret that the issuer cannot link back to the specific signing request.
+Receipts use RSA blind signatures per IETF RFC 9474 (RSA Blind Signatures with Augmented Signature Scheme — RSABSSA). The reviewer blinds a secret value before sending it to the issuer for signing. The issuer signs the blinded value without seeing the original. The reviewer unblinds the signature, producing a valid RSA signature over their secret that the issuer cannot link back to the specific signing request.
 
 This provides the core privacy property: the issuer knows that *someone* interacted (they signed a blinding request), but cannot determine which unblinded receipt belongs to which interaction.
+
+### Why RSABSSA
+
+1. Battle-tested: RFC 9474 is an IETF standard used in Privacy Pass and other production systems
+2. Well-understood security: provable blindness under the RSA assumption
+3. TypeScript ecosystem: implementations available for the TypeScript/Node.js stack
+4. No ZK-circuit-friendliness needed: the interaction proof uses traditional signature verification, not ZK (see Interaction Proof Design below)
 
 ## Issuer
 
@@ -21,6 +28,10 @@ The issuer is the business or service provider (or their point-of-sale / payment
 3. Rotates keysets on a fixed schedule for temporal binding (see Keyset Rotation below)
 
 The verifier maintains an accepted issuer registry. Only receipts signed by accepted issuers are valid.
+
+### Issuer Registry Governance (MVP)
+
+For MVP, the issuer registry is an admin-managed PostgreSQL table. An operator manually adds issuers and their keysets after vetting. There is no self-registration. This is the simplest approach that enables launch without closing the door on more decentralized governance post-MVP (e.g., on-chain attestation, community vetting).
 
 ## Issuance Flow
 
@@ -81,12 +92,26 @@ At admission, the gateway performs these checks as part of `verify_interaction(b
 4. The keyset's validity period falls within the claimed time window's bounds
 5. Store `receipt_hash` in spent-receipts table
 
+## Interaction Proof Design
+
+The `interaction_proof` field in the `proof_bundle` contains the raw receipt data `(r, S, keyset_id)`. Verification uses traditional RSA signature verification, not a ZK proof.
+
+The verifier sees `r` and `S` during verification. This is acceptable because:
+
+1. The verifier already processes all review data (content, proof bundle, posting key) — seeing `r` does not grant additional deanonymization capability
+2. The spent-receipts table stores `Hash(r)` regardless of whether verification is ZK or traditional — the verifier can map `Hash(r)` → review either way, so ZK would not provide meaningful additional privacy
+3. **Issuer unlinkability is preserved**: the issuer never sees `r` (only the blinded `B`), so even if the verifier knows `r`, the issuer cannot link it to the signing request
+4. **Public unlinkability is preserved**: published reviews never contain `r`, `S`, or `Hash(r)`
+
+A ZK interaction proof could be considered post-MVP if the trust model changes (e.g., decentralized verification where the verifier is not trusted), but for MVP the verifier is a trusted server component.
+
 ## Privacy Properties
 
 1. **Issuer unlinkability**: The issuer cannot link an unblinded receipt `(r, S)` to the blinded signing request `B` they processed. They know an interaction occurred but not which review it produced.
-2. **Verifier unlinkability**: The verifier learns that a valid receipt exists for the subject but not which specific interaction event produced it (within the keyset's time period).
+2. **Issuer-verifier unlinkability**: Even though the verifier sees `r`, it cannot collaborate with the issuer to link a review to a specific signing event — the issuer never sees `r` or `S`, and the blind signature scheme prevents the reverse mapping from `(r, S)` to `B`.
 3. **No identity leakage**: The receipt does not contain or reveal the reviewer's persistent identity, WoT position, or Nostr keys.
 4. **Temporal privacy**: The exact interaction timestamp is not revealed. Only the keyset period (coarse time bound) is known to the verifier, and the time-window proof further abstracts this into the declared window.
+5. **Public unlinkability**: Published reviews never contain receipt data (`r`, `S`, `Hash(r)`, or `keyset_id`). The public cannot link reviews to specific interactions.
 
 ## Trust Boundaries
 
@@ -126,8 +151,8 @@ The receipt's keyset period provides the temporal binding for the time-window pr
 
 ## Open Items (to close before build lock)
 
-1. Specific blind signature scheme (RSA blind signatures, BDH-based, etc.)
-2. Accepted issuer registry governance (who can register as an issuer, how are they vetted)
+1. ~~Specific blind signature scheme~~ **CLOSED**: RSABSSA per IETF RFC 9474. See "Mechanism" section above.
+2. ~~Accepted issuer registry governance~~ **CLOSED**: admin-managed PostgreSQL table with manual registration for MVP. See "Issuer Registry Governance" section above.
 3. Keyset rotation schedule (daily recommended, but depends on interaction volume patterns)
 
 ## Test Requirements

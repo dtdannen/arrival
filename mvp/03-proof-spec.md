@@ -2,15 +2,16 @@
 
 ## Required Proof Statements
 
-Each review submission must satisfy all four statements:
+Each review submission must satisfy all four statements. Proof composition is **modular**: each statement is verified independently using its own proof type and verification method.
 
-1. `Membership`
+1. `Membership` — **ZK proof** (Semaphore v4 Groth16)
    - "I know a secret corresponding to a commitment included in the active WoT cohort root for this subject."
-2. `Interaction`
+2. `Interaction` — **traditional verification** (RSA signature check, not ZK)
    - "I possess a valid interaction receipt issued for this subject by an accepted issuer."
-3. `TimeBlind`
+   - The `interaction_proof` contains raw receipt data `(r, S, keyset_id)`. Verified by RSA signature verification and spent-receipt check. See `12-receipt-spec.md` "Interaction Proof Design" for privacy rationale.
+3. `TimeBlind` — **ZK proof** (custom Circom circuit)
    - "My interaction happened within an allowed time window."
-4. `Uniqueness`
+4. `Uniqueness` — **server-side check** (nullifier dedup)
    - "My scoped nullifier for `(subject_id, epoch_id)` is unique."
 
 ## Public Inputs
@@ -50,7 +51,7 @@ Where:
 
 - `domain_tag`: fixed application constant identifying this protocol (e.g., `Poseidon("arrival-review-v1")`)
 - `subject_id`: the reviewed entity key, encoded as a BN254 scalar field element
-- `epoch_id`: the epoch identifier, derived per `02-architecture.md`
+- `epoch_id`: the epoch identifier, unified with `time_window_id`: `epoch_id = hash(subject_id || time_window_id)`, derived per `02-architecture.md`
 
 The verifier independently computes `scope` from known public values and confirms it matches the proof's public input before accepting the proof.
 

@@ -129,7 +129,12 @@ The reviewer can choose not to proceed if the anonymity set is too small for the
 
 ### Relationship to `epoch_id`
 
-Whether `time_window_id` and `epoch_id` are the same or independent is an open design decision (see `INCONSISTENCIES.md` issue 8). If unified, the nullifier scope and time-window scope are identical, which is simpler but means changing window size also changes when users can re-review. If independent, the interaction must be defined.
+`epoch_id` and `time_window_id` are **unified**: `epoch_id = hash(subject_id || time_window_id)`. The nullifier scope and batch release scope are always identical. This means:
+
+1. One review per identity per subject per time window
+2. Changing window size also changes re-review cadence (accepted tradeoff for simplicity)
+3. Larger anonymity sets per batch (all reviews in a window share the same epoch)
+4. No complexity from mismatched nullifier/window scopes
 
 ### Relationship to `k_min`
 

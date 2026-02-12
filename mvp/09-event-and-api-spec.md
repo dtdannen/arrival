@@ -19,15 +19,16 @@
 ## `proof_bundle` fields
 
 1. `cohort_root_hash`
-2. `membership_proof`
-3. `interaction_proof`
-4. `timeblind_proof`
+2. `membership_proof` (Semaphore v4 Groth16 ZK proof)
+3. `interaction_proof` (raw receipt data: `r`, `S`, `keyset_id` — verified by traditional RSA signature verification, not ZK; see `12-receipt-spec.md` "Interaction Proof Design")
+4. `timeblind_proof` (custom Circom ZK proof for time-window range check)
 5. `time_window_id`
 6. `window_start` (unix timestamp)
 7. `window_end` (unix timestamp)
 8. `nullifier_hash`
 
 `proof_bundle` must not contain `proof_version`; version selection is done at the top-level request schema.
+Proof composition is modular: each proof type uses independent verification. See `03-proof-spec.md` for proof statements and `02-architecture.md` for the verification pipeline.
 
 ## Verification Result Object
 
