@@ -48,8 +48,9 @@
    - scoped nullifier
 6. Client submits review with one-time posting key and proof bundle.
 7. Gateway verifies bundle and checks nullifier uniqueness.
-8. If admitted, review is indexed and published with verification badges.
-9. If rejected, response includes deterministic reject code.
+8. If admitted, review is stored with status `admitted` (held). Nullifier is consumed. Review is not yet visible in the feed.
+9. If rejected, response includes deterministic reject code. Nullifier is not consumed.
+10. At window close, batch release job checks `t_min` and publishes all held reviews for the window simultaneously in randomized order (status → `published`). See `11-time-window-policy.md` for batch release rules.
 
 ## Verification Pipeline
 
@@ -68,8 +69,10 @@
    - `root_id`, `subject_id`, `root_hash`, `k_size`, `distance_bucket`, `valid_from`, `valid_to`
    - one row per `(subject_id, distance_bucket)` per validity period
 2. `reviews` table
-   - `review_id`, `subject_id`, `epoch_id`, `content_ref`, `proof_ref`, `distance_bucket`, `created_at`
+   - `review_id`, `subject_id`, `epoch_id`, `content_ref`, `proof_ref`, `distance_bucket`, `status`, `time_window_id`, `created_at`
+   - `status`: `admitted` (held, not visible) or `published` (batch-released, visible in feed)
    - `distance_bucket` is derived at admission from the root used in the membership proof
+   - `time_window_id` links the review to its batch release window
 3. `nullifiers` table
    - `subject_id`, `epoch_id`, `nullifier_hash`, `first_seen_at`
 4. `receipts` table (optional cache)

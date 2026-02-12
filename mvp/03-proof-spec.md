@@ -79,7 +79,10 @@ if !verify_interaction(bundle): reject("invalid_interaction_proof")
 if !verify_timeblind(bundle): reject("invalid_timeblind_proof")
 if nullifier_exists(subject_id, epoch_id, nullifier_hash): reject("duplicate_nullifier")
 store_nullifier(subject_id, epoch_id, nullifier_hash)
-accept()
+admit()
+# admit() stores the review with status "admitted" (held).
+# Admission is not publication. Publication happens at batch release
+# when the time window closes and t_min is met. See 11-time-window-policy.md.
 ```
 
 ## Versioning Rules

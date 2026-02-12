@@ -22,6 +22,17 @@
 3. Cross-subject submissions with same user do not collide nullifiers
 4. Epoch rotation allows new submission in new epoch
 
+## Review Lifecycle Tests
+
+1. Admitted review is not visible in feed (status = `admitted`, not returned by `GET /v1/subjects/{subject_id}/reviews`)
+2. Batch release transitions all held reviews for a closed window to `published` simultaneously
+3. Batch release does not occur while time window is still open
+4. Batch release does not occur when `t_min` is not met (reviews remain `admitted`)
+5. Published reviews appear in randomized order (not submission order)
+6. Gateway returns `status: "admitted"` with `held_reason` on successful submission
+7. Rejected submission does not consume nullifier (reviewer can resubmit corrected proof)
+8. Window merge: reviews held in a short window that never met `t_min` are merged into the next longer window
+
 ## Adversarial Tests
 
 1. Replay attack with same payload

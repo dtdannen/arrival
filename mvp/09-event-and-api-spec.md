@@ -28,15 +28,18 @@
 
 ## Verification Result Object
 
-1. `accepted` (bool)
-2. `reject_code` (nullable string)
-3. `reject_detail` (nullable string)
-4. `verified_flags`:
+1. `status` (`"rejected"` | `"admitted"`)
+2. `reject_code` (nullable string, present when rejected)
+3. `reject_detail` (nullable string, present when rejected)
+4. `held_reason` (nullable string, present when admitted; e.g. `"window_open"`, `"t_min_not_met"`)
+5. `verified_flags`:
    - `membership_verified`
    - `interaction_verified`
    - `timeblind_verified`
    - `nullifier_unique`
    - `k_threshold_met`
+
+The gateway never returns `"published"` synchronously. Publication happens at batch release (see `11-time-window-policy.md`). `"admitted"` means all proof checks passed and the review is held for batch release.
 
 ## API Endpoints
 
@@ -70,7 +73,7 @@ Filters:
 
 Returns:
 
-1. admitted reviews
+1. published reviews only (status = `published`; admitted-but-held reviews are not visible)
 2. verification badges
 
 ## `GET /v1/reviews/{review_id}/verification`

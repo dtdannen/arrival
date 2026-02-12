@@ -74,7 +74,7 @@ This filter as described **cannot work** without either deanonymization or addit
 - Users still see cohort size via the cohort-root endpoint response before submitting (read-only, informational).
 - Spec files updated: `09-event-and-api-spec.md` (field removed from `proof_bundle`), `03-proof-spec.md` (admission pseudocode clarified as server-side lookup).
 
-### 15. Admission/Publication Lifecycle Is Contradictory
+### 15. ~~Admission/Publication Lifecycle Is Contradictory~~ RESOLVED
 
 The architecture and proof spec model a binary accept/reject outcome with immediate publication:
 
@@ -88,11 +88,17 @@ But `11-time-window-policy.md` requires a hold/defer + batch release lifecycle:
 - "Verify `t_min` is met before releasing the batch" (batch release rule 2)
 - "Window with fewer than `t_min` receipts: review held, not published" (test requirement 4)
 
-These are contradictory. A review can pass all proof checks (admitted) but still not be publishable yet (window open, or `t_min` not met). The spec has no state for this. The verification result object, the API response, the storage model, and the admission pseudocode all need a `held`/`deferred` state between admission and publication.
+**Resolution**:
+- **Decision**: Option A — three-state lifecycle: `rejected` / `admitted` (held) / `published`.
+- `02-architecture.md` submission flow: step 8 now stores with status `admitted` (held, not visible). New step 10 adds batch release job that transitions `admitted` → `published` at window close when `t_min` is met. Rejected submissions do not consume nullifiers.
+- `03-proof-spec.md` admission pseudocode: `accept()` → `admit()` with comment clarifying admission is not publication.
+- `09-event-and-api-spec.md` verification result: `accepted` (bool) → `status` (`"rejected"` | `"admitted"`). Added `held_reason` field (`"window_open"`, `"t_min_not_met"`). Feed endpoint returns only `published` reviews. Gateway never returns `"published"` synchronously.
+- `02-architecture.md` storage model: `reviews` table gains `status` and `time_window_id` columns.
+- `10-test-plan.md`: added "Review Lifecycle Tests" section covering held-not-visible, batch release timing, window merge, nullifier non-consumption on reject.
+- `11-time-window-policy.md`: no changes needed — it was already correct and is the canonical owner of batch release policy.
+- **No max hold duration.** If `t_min` is never met, the review stays held. Window merging (weekly → biweekly → monthly → quarterly) is the escape valve. If even quarterly can't meet `t_min`, publishing would deanonymize the reviewer. The pre-submission disclosure warns the reviewer before they submit.
 
-**Resolution needed**: Add a three-state lifecycle (rejected / admitted-held / published) across architecture, proof spec, API spec, and storage model. Define what the gateway returns to the client when a review is admitted but held.
-
-**Affected files**: `02-architecture.md`, `03-proof-spec.md`, `09-event-and-api-spec.md`, `11-time-window-policy.md`
+**Affected files**: `02-architecture.md`, `03-proof-spec.md`, `09-event-and-api-spec.md`, `10-test-plan.md`
 
 ### 16. Time-Window Proof Inputs Don't Match API/Proof Schema
 
@@ -414,16 +420,9 @@ Expose coarse timestamps with randomized jittered publication schedule.
 Recommended:
 Option A plus Option C for stronger linkage resistance.
 
-### 15. Admission/Publication Lifecycle Is Contradictory
+### 15. ~~Admission/Publication Lifecycle Is Contradictory~~ RESOLVED
 
-Option A:
-Add a three-state lifecycle: `rejected` / `admitted` (held) / `published`. Gateway returns `admitted` with a hold notice when proof checks pass but window is still open or `t_min` not met. Add `status` field to reviews table. Batch release job transitions `admitted` → `published` when window closes and `t_min` is met.
-
-Option B:
-Separate admission from publication entirely. Gateway only admits (stores + deduplicates). A separate publication service handles batch release. API has distinct endpoints for submission status vs. published feed.
-
-Recommended:
-Option A for simplicity. The three-state model is the minimum viable change to reconcile the existing spec with batch release.
+**Decision**: Option A — three-state lifecycle (`rejected` / `admitted` / `published`). Gateway returns `status: "admitted"` with `held_reason` on success. Batch release job transitions `admitted` → `published` at window close when `t_min` met. No max hold duration — window merging is the escape valve, and pre-submission disclosure warns the reviewer.
 
 ### 16. Time-Window Proof Inputs Don't Match API/Proof Schema
 
