@@ -71,7 +71,8 @@ Requirements:
 ```text
 if !validate_schema(bundle): reject("invalid_schema")
 if !root_active(subject_id, cohort_root_hash): reject("inactive_root")
-if cohort_size(cohort_root_hash) < k_min: reject("insufficient_anonymity_set")
+if server_k_size(cohort_root_hash) < k_min: reject("insufficient_anonymity_set")
+# k_size is always read from the server-side roots table, never from client input
 if !verify_membership(bundle): reject("invalid_membership_proof")
 if !verify_interaction(bundle): reject("invalid_interaction_proof")
 if !verify_timeblind(bundle): reject("invalid_timeblind_proof")

@@ -16,12 +16,11 @@
 ## `proof_bundle` fields
 
 1. `cohort_root_hash`
-2. `cohort_size`
-3. `membership_proof`
-4. `interaction_proof`
-5. `timeblind_proof`
-6. `time_window_id`
-7. `nullifier_hash`
+2. `membership_proof`
+3. `interaction_proof`
+4. `timeblind_proof`
+5. `time_window_id`
+6. `nullifier_hash`
 
 ## Verification Result Object
 

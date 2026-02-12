@@ -22,6 +22,26 @@ This is the canonical V4 plan for MVP execution.
 
 Consumer / local-business review app.
 
+## Design Principles
+
+1. **Privacy and anonymity are the priority.** When a design choice is a tradeoff between stronger anonymity and lower computational cost, choose stronger anonymity. Additional computation, storage, or complexity in service of privacy is an acceptable cost. Features that weaken anonymity guarantees — even slightly, even conveniently — are not acceptable.
+2. **Never trust the client for security-critical values.** If the server can derive or verify a value, the client should not be the authority for it. Client-submitted values are hints or conveniences, never the source of truth for policy enforcement.
+3. **Prefer removing features over compromising guarantees.** If a feature cannot be implemented without weakening privacy, anonymity, or trust boundaries, remove the feature. Don't ship a degraded version that looks like it works.
+4. **Prefer decentralization.** When choosing between a centralized and decentralized approach, prefer decentralization. MVP may launch with centralized components for pragmatism, but design decisions should not close the door on decentralization later.
+5. **Local proving is a privacy decision, not a performance decision.** Local proving keeps private witness data (identity secrets, Merkle paths, interaction timestamps) on the user's device. Remote proving requires trusting a third party with that data. We default to local proving because it eliminates that trust requirement, regardless of computational cost.
+6. **Ship to real users.** This MVP is a product, not a proof of concept. The spec must be complete enough to build something real users submit reviews through, not just a technical demonstration.
+
+## Architectural Commitments
+
+1. **Nostr is the WoT source.** The social graph is built from Nostr follow data. This is non-negotiable. Nostr-specific ingestion semantics (replaceable events, relay variance, deterministic resolution) must be fully specified.
+2. **Interaction proof mechanism is open.** The goal is "prove the reviewer interacted with the subject." We are not locked to Cashu or ecash specifically. If a simpler mechanism (e.g., signed attestations) achieves the same goal with less complexity, that's preferred.
+3. **One canonical spec per domain.** Each spec file owns its domain. Other files reference, not redefine. When conflicts arise, the canonical owner wins:
+   - `02-architecture.md` → system components, submission flow, storage model
+   - `03-proof-spec.md` → proof statements, public/private inputs, nullifier construction, admission policy
+   - `09-event-and-api-spec.md` → API endpoints, event schemas, proof bundle fields, reject codes
+   - `11-time-window-policy.md` → time-window circuit, adaptive window calculation, batch release policy
+   - `06-trust-model-and-risk-mitigation.md` → trust boundaries, residual risks, mitigations
+
 ## Non-Negotiable Requirements
 
 1. `TimeBlind` is mandatory (no exact interaction timestamps in public proofs).
@@ -34,9 +54,9 @@ Consumer / local-business review app.
 
 1. `nostr-keys` for identity and signing
 2. `nostr-web-of-trust` for social graph
-3. `semaphore/nullreview` style ZK membership + nullifier proofs
-4. `cashu/blind-signature` interaction receipts
-5. `timeblind` range/window proofs
+3. Semaphore v4 (`@semaphore-protocol/*`) for ZK membership proofs + nullifiers
+4. Interaction receipts — mechanism open (see Architectural Commitments); must prove reviewer interacted with subject without revealing reviewer identity
+5. Custom Circom time-window circuit (`circomlib/comparators.circom`) for privacy-preserving timestamp range proofs
 
 ## Proving Policy
 

@@ -11,6 +11,7 @@ This document focuses on **cryptographic/protocol correctness, stack fit, and cr
 - **Issue numbers are stable IDs, not sequence positions.** Numbers may appear out of order within severity sections because new issues are appended. Never renumber — other docs and conversations may reference these IDs.
 - **Each issue has two sections**: a full description (in the severity-grouped section above) and a solution options summary (in "Solution Options by Issue" below). For resolved issues, the description section carries the full resolution narrative; the solution options section carries the concise decision record.
 - **Severity tiers** (Critical / High / Medium) reflect protocol impact, not implementation effort.
+- **Design principles and architectural commitments apply to all decisions.** See `README.md` "Design Principles" and "Architectural Commitments" sections. Key rules: privacy wins over computation; never trust the client for security-critical values; remove features rather than compromise guarantees; prefer decentralization; interaction proof mechanism is open (not locked to Cashu); one canonical spec per domain.
 
 ## Critical
 
@@ -55,18 +56,15 @@ This filter as described **cannot work** without either deanonymization or addit
 
 **Affected files**: `09-event-and-api-spec.md`, `02-architecture.md`
 
-### 4. `cohort_size` Client Trust -- Security Gap
+### 4. ~~`cohort_size` Client Trust -- Security Gap~~ RESOLVED
 
-`cohort_size` appears in two places:
+`cohort_size` previously appeared in the client-submitted `proof_bundle` (`09-event-and-api-spec.md`) and the server-side `roots` table (`k_size` in `02-architecture.md`). A malicious client could lie about cohort size to bypass `k_min`.
 
-- The `proof_bundle` (submitted by the client) in `09-event-and-api-spec.md`
-- The `roots` table (`k_size`) in `02-architecture.md`
-
-Which is authoritative for `k_min` enforcement? If the verifier trusts the client-submitted `cohort_size`, a malicious client could lie about cohort size to bypass the `k_min` threshold. The verifier **must** look up `k_size` from the `roots` table using the `cohort_root_hash`, not trust the client's claim.
-
-**Resolution needed**: Specify that `cohort_size` in the proof bundle is informational only, and that `k_min` enforcement always uses the server-side `k_size` from the roots table. Or remove `cohort_size` from the client-submitted bundle entirely.
-
-**Affected files**: `09-event-and-api-spec.md`, `02-architecture.md`, `03-proof-spec.md`
+**Resolution**:
+- **Decision**: Option A — remove `cohort_size` from the client-submitted proof bundle entirely.
+- The verifier always reads `k_size` from the server-side `roots` table using `cohort_root_hash`. No client input is consulted for `k_min` enforcement.
+- Users still see cohort size via the cohort-root endpoint response before submitting (read-only, informational).
+- Spec files updated: `09-event-and-api-spec.md` (field removed from `proof_bundle`), `03-proof-spec.md` (admission pseudocode clarified as server-side lookup).
 
 ### 15. Admission/Publication Lifecycle Is Contradictory
 
@@ -299,16 +297,9 @@ Add reader-specific distance proofs (complex and not MVP-friendly).
 Recommended:
 Option A immediately, Option B only if distance filtering remains product-critical.
 
-### 4. `cohort_size` Client Trust -- Security Gap
+### 4. ~~`cohort_size` Client Trust -- Security Gap~~ RESOLVED
 
-Option A:
-Remove `cohort_size` from client-submitted proof bundle.
-
-Option B:
-Keep field for observability/UI but treat as non-authoritative; verifier always reads root metadata server-side.
-
-Recommended:
-Option A for clean trust boundaries.
+**Decision**: Option A — removed `cohort_size` from client-submitted proof bundle. Verifier always uses server-side `k_size` from roots table. No client input trusted for `k_min` enforcement.
 
 ### 5. Cashu Interaction Receipt Issuance Flow Is Undefined
 
