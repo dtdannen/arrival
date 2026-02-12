@@ -1,6 +1,8 @@
-# arrival
-
-The future of reviews: Anonymous, Verifiable, based on your Web of Trust
+<p align="center">
+  <img src="arrival.jpg" alt="Arrival" />
+  <br>
+  <em>The future of reviews: Anonymous, Verifiable, based on your Web of Trust</em>
+</p>
 
 Reviews are broken. Honest reviewers face retaliation. Fake reviews poison trust. Arrival fixes this with zero-knowledge proofs: leave anonymous, verified reviews that prove you're a real person in the reviewer's social network, who actually visited the business, without revealing who you are.
 
