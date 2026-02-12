@@ -151,13 +151,14 @@ The spec previously treated Cashu blind signatures as proof-of-interaction recei
 - This was made possible by resolving Issue 2 with scope packing instead of a custom nullifier circuit. Since we don't modify Semaphore's circuits, we reuse its ceremony directly.
 - `06-trust-model-and-risk-mitigation.md` updated to state the trusted setup dependency explicitly and reference Semaphore v4's 400+ participant ceremony. "If" hedging removed.
 
-### 7. RISC Zero Remote Proving Section Is Dated
+### 7. ~~RISC Zero Remote Proving Section Is Dated~~ RESOLVED
 
-`07-risc0-evaluation.md` references a "Boundless/Bonsai ecosystem" for remote proving. Current Boundless docs state Bonsai was deprecated and retired on **December 1, 2025**.
+`07-risc0-evaluation.md` referenced a "Boundless/Bonsai ecosystem" for remote proving. Bonsai was deprecated and retired on December 1, 2025.
 
-This does not change the MVP decision to defer RISC Zero as primary, but it does make the remote-prover subsection factually outdated and can cause wrong stack assumptions if used for planning.
-
-**Resolution needed**: Update the RISC Zero evaluation text to remove Bonsai as an active option and align all remote proving references with current Boundless documentation.
+**Resolution**:
+- Updated remote proving reference to note Bonsai deprecation and current Boundless network.
+- Also updated all stale naming in the file: "NullReview" → Semaphore v4, "TimeBlind" → custom Circom time-window circuit, "receipt proofs" → blind-signed interaction receipts. Aligns with resolved Issues #1 and #5.
+- Spec files updated: `07-risc0-evaluation.md`.
 
 **Affected files**: `07-risc0-evaluation.md`
 
@@ -325,16 +326,9 @@ Even if interaction timestamps are protected in proofs, exact submission and pub
 
 **Decision**: Option A — use unmodified Semaphore circuits and existing ceremony artifacts. Enabled by resolving Issue 2 with scope packing (no circuit modifications needed).
 
-### 7. RISC Zero Remote Proving Section Is Dated
+### 7. ~~RISC Zero Remote Proving Section Is Dated~~ RESOLVED
 
-Option A:
-Update docs to current Boundless-only remote proving references.
-
-Option B:
-Remove remote RISC Zero references entirely from MVP docs because RISC Zero is deferred.
-
-Recommended:
-Option B for MVP docs; keep Option A in post-MVP evaluation notes.
+**Decision**: Hybrid of Options A and B — kept the evaluation doc (it's useful context for post-MVP) but updated Bonsai reference to note deprecation and aligned all naming with current stack terminology.
 
 ### 8. Epoch ID Computation/Verification Gap
 

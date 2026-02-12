@@ -2,7 +2,7 @@
 
 ## Question
 
-Can we use RISC Zero in the MVP, and should it replace the current Semaphore/NullReview-style ZK plan?
+Can we use RISC Zero in the MVP, and should it replace the current Semaphore v4 + custom Circom circuit ZK plan?
 
 ## Short Answer
 
@@ -15,7 +15,7 @@ Can we use RISC Zero in the MVP, and should it replace the current Semaphore/Nul
 1. A zkVM for proving execution of Rust programs (`risc0-zkvm`).
 2. Multiple receipt/proof modes (`composite`, `succinct`, `groth16`).
 3. Local proving options (CPU and CUDA acceleration).
-4. Remote proving services (Boundless/Bonsai ecosystem).
+4. Remote proving services (Boundless network; Bonsai was deprecated December 2025).
 
 ## Why It Is Attractive
 
@@ -26,14 +26,14 @@ Can we use RISC Zero in the MVP, and should it replace the current Semaphore/Nul
 ## Why It Is Not Ideal as MVP Core (for this product)
 
 1. Your MVP priority is anonymity + WoT membership + time privacy policy enforcement.
-2. Semaphore/NullReview gives direct primitives for membership proofs + nullifiers that map tightly to your requirements.
+2. Semaphore v4 gives direct primitives for membership proofs + nullifiers that map tightly to your requirements.
 3. RISC Zero local proving is still operationally heavier than a narrow, purpose-built circuit path for this use case.
 4. RISC Zero docs explicitly note proving can be expensive and that remote proving is recommended for many workloads, which adds trust/privacy tradeoffs you are trying to minimize.
 5. You still need policy and privacy controls (`k_min`, time bucketing, delayed publish) regardless of proving backend.
 
 ## Recommended Position for MVP
 
-1. Keep MVP core on Semaphore/NullReview + TimeBlind + receipt proofs.
+1. Keep MVP core on Semaphore v4 + custom Circom time-window circuit + blind-signed interaction receipts.
 2. Keep local proving as default and remote as optional fallback.
 3. Track RISC Zero as a post-MVP candidate for:
    - verifiable aggregation services
