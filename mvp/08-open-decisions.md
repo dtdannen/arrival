@@ -26,6 +26,7 @@
    - Local proving is the default path.
    - Remote proving is opt-in fallback only, with explicit trust warning.
 3. Circuit/proof versioning and migration cadence
+4. ~~Technology stack~~ **CLOSED**: TypeScript/Circom-first. TypeScript for all services and client, Circom + snarkjs for ZK circuits and proving (WASM for browser-local), nostr-tools for Nostr integration, PostgreSQL for data. See `04-implementation-plan.md` "Technology Stack."
 
 ## Receipt Decisions
 

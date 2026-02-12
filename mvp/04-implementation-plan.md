@@ -1,5 +1,35 @@
 # Implementation Plan (Step-by-Step)
 
+## Technology Stack
+
+### Language and Runtime
+
+- **TypeScript** for all services (gateway, indexer, publisher, feed API) and client application
+- **Node.js** runtime for backend services
+
+### ZK Circuits and Proving
+
+- **Circom** for circuit authoring (Semaphore v4 membership circuit + custom time-window circuit)
+- **snarkjs** for proof generation and verification, with WASM build for browser-local proving
+- **Semaphore v4** (`@semaphore-protocol/*`) packages for membership proofs, nullifiers, and Groth16 ceremony artifacts
+
+### Nostr Integration
+
+- **nostr-tools** (`nostr-tools`) for Nostr event parsing, signature validation, and relay communication
+
+### Data
+
+- **PostgreSQL** for persistent storage (roots, reviews, nullifiers, spent-receipts, issuer registry)
+
+### Client / UI
+
+- Web application with in-browser proving via snarkjs WASM
+- No native app for MVP
+
+### Rationale
+
+TypeScript/Circom-first is the natural fit because Semaphore v4's entire ecosystem is TypeScript, snarkjs compiles to WASM for browser-local proving (a design principle, not just a performance choice), and nostr-tools is the most mature Nostr library. A single language across client and server reduces integration friction for MVP.
+
 ## Step 0: Lock Decisions and Interfaces
 
 Deliverables:
@@ -7,11 +37,13 @@ Deliverables:
 1. Freeze proof stack for MVP
 2. Freeze verification policy defaults (`k_min`, epoch, window rules)
 3. Freeze schema for review + proof bundle
+4. Confirm technology stack selections (see above)
 
 Exit criteria:
 
 1. All fields versioned
 2. Reject codes documented
+3. Technology stack locked and documented
 
 ## Step 1: WoT Cohort Pipeline
 

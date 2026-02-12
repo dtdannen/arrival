@@ -292,11 +292,19 @@ These are not independent policy knobs -- they interact with each other and with
 - `03-proof-spec.md`: no changes needed — `verify_interaction(bundle)` delegates to receipt spec.
 - Spec files updated: `12-receipt-spec.md`, `08-open-decisions.md`.
 
-### 12. No Technology Stack Specified
+### 12. ~~No Technology Stack Specified~~ RESOLVED
 
-The entire spec is technology-agnostic. Semaphore v4 is TypeScript/Circom. Cashu implementations exist in TypeScript, Python, and Rust. Nostr libraries span multiple languages. These choices cascade: if the proof engine must run in-browser (local proving default), that constrains the stack to what compiles to WASM. This should be locked before implementation.
+The entire spec is technology-agnostic. Semaphore v4 is TypeScript/Circom. Nostr libraries span multiple languages. These choices cascade: if the proof engine must run in-browser (local proving default), that constrains the stack to what compiles to WASM. This should be locked before implementation.
 
 **Affected files**: `04-implementation-plan.md`, `08-open-decisions.md`
+
+**Resolution**:
+- **Decision**: Option A — TypeScript/Circom-first.
+- TypeScript for all services (gateway, indexer, publisher, feed API) and client. Circom + snarkjs for ZK circuits and proving with WASM build for browser-local proving. `nostr-tools` for Nostr integration. PostgreSQL for persistent storage.
+- Rationale: Semaphore v4's ecosystem is TypeScript, snarkjs WASM enables browser-local proving (design principle), nostr-tools is the most mature Nostr library, single language reduces MVP integration friction.
+- `04-implementation-plan.md`: added "Technology Stack" section with language/runtime, ZK, Nostr, data, and client subsections. Added stack confirmation to Step 0 deliverables and exit criteria.
+- `08-open-decisions.md`: added and closed technology stack decision under Proof/Infra Decisions.
+- Spec files updated: `04-implementation-plan.md`, `08-open-decisions.md`.
 
 ### 13. Nostr WoT Ingestion Rules Are Underspecified (Replaceable Event Semantics)
 
@@ -373,19 +381,9 @@ Even if interaction timestamps are protected in proofs, exact submission and pub
 
 **Decision**: Option A (refined) — receipt expiration is emergent from time-window + keyset system. No separate expiration timer. Cross-epoch reuse blocked by epoch-independent spent-receipts table. Nullifier and spent-receipt checks are complementary. See `12-receipt-spec.md` "Receipt Expiration and Epoch Interaction."
 
-### 12. No Technology Stack Specified
+### 12. ~~No Technology Stack Specified~~ RESOLVED
 
-Option A (TypeScript/Circom-first):
-- Web/client/gateway/indexer: TypeScript
-- ZK circuits: Circom + Semaphore packages + custom time-window circuit
-- Proof tooling: `snarkjs`/WASM-compatible client proving path
-- Data: Postgres for roots/reviews/nullifiers
-
-Option B (Rust-first):
-- Core services/provers in Rust, custom integrations for Nostr/Cashu/Semaphore interoperability
-
-Recommended:
-Option A for closest fit with Semaphore ecosystem and browser-local proving goals.
+**Decision**: Option A — TypeScript/Circom-first. TypeScript for all services and client, Circom + snarkjs (WASM) for ZK, nostr-tools for Nostr, PostgreSQL for data. See `04-implementation-plan.md` "Technology Stack."
 
 ### 13. Nostr WoT Ingestion Rules Are Underspecified (Replaceable Event Semantics)
 
