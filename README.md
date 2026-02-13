@@ -90,6 +90,20 @@ The verification pipeline (the 10-step check when a review is submitted) scales 
 ### For Reviewers
 
 <details>
+<summary><strong>Why does "recency" need a cryptographic proof?</strong></summary>
+
+The TimeBlind proof actually does three things at once:
+
+1. **Validity** — it proves your visit actually happened during the claimed time period. Without it, someone could reuse an old interaction receipt from 2 years ago and submit a review that looks "recent" but is based on a completely stale experience. The proof takes your private visit timestamp and cryptographically proves it falls within the time window — so you can't lie about when you went.
+
+2. **Privacy** — it hides your exact visit time. The proof reveals only the time window (e.g., "January 2026"), not the exact day or hour. This is the "blind" part of TimeBlind.
+
+3. **Filtering** — readers can filter reviews by time period, which matters because businesses change — new chefs, new management, updated products. Recency is useful signal, but readers get it through time windows, never exact timestamps.
+
+So the window helps anonymity, the proof prevents stale receipt abuse, and the time window ID gives readers useful recency filtering.
+</details>
+
+<details>
 <summary><strong>How is my identity protected?</strong></summary>
 
 Your persistent identity is never linked to your reviews. You generate a one-time posting key for each review, and all proofs are created locally on your device. The server only sees cryptographic proofs, not who you are.
