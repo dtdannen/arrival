@@ -55,6 +55,16 @@ Yes — and this is a hard requirement, not a filter. You need a Nostr account, 
 You need all of the following: (1) a Nostr identity, (2) enough social connections that your cohort has at least 50 members, (3) an actual visit to the business to get an interaction receipt, (4) your visit falls within an active time window, (5) you haven't already reviewed that business this period, and (6) the business has enough total reviews in the window (at least 20) for batch release. If any of these aren't met, the review is either rejected or held.
 </details>
 
+<details>
+<summary><strong>When someone follows or unfollows someone, does everything have to be recomputed?</strong></summary>
+
+No — not in real-time, and not everything. The system refreshes the social graph on a schedule (daily by default). At each refresh, it checks whether the graph has actually changed. If it hasn't, nothing is rebuilt. If it has, the Merkle trees are rebuilt with updated membership lists and new roots are published.
+
+Existing reviews are not affected — they were verified against the root that was active at the time of submission, and that root remains valid for its time period. A new follow might move someone into a closer distance tier (e.g., d<=3 to d<=2) at the next refresh. A removed follow might bump someone out of a tier. But already-submitted reviews still stand either way.
+
+So a single follow/unfollow doesn't trigger an immediate recomputation. It gets picked up in the next daily refresh, and only the affected cohort trees are rebuilt — not every tree in the system.
+</details>
+
 ### For Reviewers
 
 <details>
