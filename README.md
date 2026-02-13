@@ -65,6 +65,28 @@ Existing reviews are not affected — they were verified against the root that w
 So a single follow/unfollow doesn't trigger an immediate recomputation. It gets picked up in the next daily refresh, and only the affected cohort trees are rebuilt — not every tree in the system.
 </details>
 
+<details>
+<summary><strong>Is this only for businesses? Could someone review a product, a landlord, or a grocery store SKU?</strong></summary>
+
+Yes — the system is designed around a generic `subject_id`, not "businesses" specifically. A subject could be a restaurant, a product SKU, a hotel, a landlord, an apartment complex, or anything else people want to review. The cryptographic system doesn't care what the subject is. It just needs a unique identifier, an interaction receipt issuer (someone who can prove you actually interacted with it), and enough traffic to meet the anonymity thresholds.
+
+The interesting part is how the interaction receipt works per subject type. For a restaurant, it might be NFC or a QR code at the location. For a grocery SKU, it could be tied to a purchase receipt. For a landlord, it could be tied to lease verification. The receipt issuer is pluggable — the rest of the system (WoT membership, Merkle trees, nullifiers, batch release) works identically regardless of what's being reviewed.
+
+The main constraint is volume. A niche product that only 30 people buy per quarter might never hit the minimum cohort size (50 people), meaning reviews would be rejected to protect anonymity. The system works best for things lots of people interact with.
+</details>
+
+<details>
+<summary><strong>Does this get expensive to scale across many subjects?</strong></summary>
+
+Yes — scaling is a real consideration. For each subject, the system maintains 3 Merkle trees (one per distance tier), signing keysets for interaction receipts, nullifier entries, and adaptive time window state. So the cost grows roughly with the number of subjects.
+
+At 1,000 local businesses, that's 3,000 trees to rebuild at each daily graph refresh. At 100,000 businesses, that's 300,000. At millions of SKUs across a retail chain, it gets serious.
+
+The spec has some built-in relief: trees are only rebuilt when the graph actually changes, only affected trees are rebuilt (not every tree in the system), and subjects with no review activity don't need active trees. But at large scale, you'd also want incremental Merkle tree updates (change the affected leaves, not full rebuilds), sharding by subject, and reuse of shared subtrees across subjects — since the WoT graph is common, many subjects share the same members at the wider distance tiers.
+
+The verification pipeline (the 10-step check when a review is submitted) scales with review volume, not subject count, so that side is more straightforward.
+</details>
+
 ### For Reviewers
 
 <details>
