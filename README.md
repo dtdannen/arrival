@@ -285,6 +285,18 @@ If your review appeared the second you submitted it, someone could match the tim
 A review period for a specific business. Depending on how busy the business is, this could be a week, two weeks, a month, or a quarter. You get one review per business per window.
 </details>
 
+<details>
+<summary><strong>What's a "one-time posting key"?</strong></summary>
+
+You have two identities in the system. Your real Nostr identity — that's "you" in the social graph, the one people follow. And a throwaway posting key, generated fresh for each review and never used again.
+
+When you submit a review, you sign it with the throwaway key, not your real Nostr key. If you used your real key, everyone would instantly know who wrote the review — game over for anonymity.
+
+The ZK proof is the bridge: it proves "the person behind this throwaway key is a real member of the WoT cohort" without revealing which member. The gateway verifies the signature (proving someone controls this key) and the ZK proof (proving that someone is in the WoT). It never sees your real key.
+
+Think of it like this: your real name is on the club membership list. But when you drop a review in the box, you sign it with a pen name nobody's ever seen before. The ZK proof is a sealed letter from the club that says "the person who wrote this is a member" — without saying which one. The throwaway key proves the review hasn't been tampered with. Your real name stays hidden.
+</details>
+
 ## Terms of Use
 
 By using Arrival, you agree to the following terms. These exist to set clear expectations about what the system does, what it doesn't do, and what you're responsible for.
