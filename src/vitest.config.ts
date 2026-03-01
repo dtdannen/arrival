@@ -33,13 +33,6 @@ export default defineConfig({
       },
       {
         test: {
-          name: 'performance',
-          include: ['tests/performance/**/*.bench.ts'],
-          testTimeout: 120_000,
-        },
-      },
-      {
-        test: {
           name: 'reliability',
           include: ['tests/reliability/**/*.test.ts'],
           testTimeout: 30_000,

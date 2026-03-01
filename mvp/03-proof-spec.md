@@ -16,15 +16,17 @@ Each review submission must satisfy all four statements. Proof composition is **
 
 ## Public Inputs
 
-1. `subject_id`
-2. `epoch_id` (proof public input; gateway recomputes authoritative epoch and rejects mismatch)
-3. `cohort_root_hash`
-4. `time_window_id` (identifies the window period)
-5. `window_start` (unix timestamp, beginning of window)
-6. `window_end` (unix timestamp, end of window)
-7. `scope` (derived: `Poseidon(domain_tag, subject_id, epoch_id)`)
-8. `nullifier_hash`
-9. `proof_version`
+These are all non-secret values available to the verifier during admission. Some are submitted in the `proof_bundle`, some are top-level submission fields, and some are server-derived. See `09-event-and-api-spec.md` for the client-submitted `proof_bundle` schema.
+
+1. `subject_id` (top-level submission field)
+2. `epoch_id` (server-derived from `subject_id` + `time_window_id`; gateway recomputes and rejects mismatch)
+3. `cohort_root_hash` (proof_bundle field)
+4. `time_window_id` (proof_bundle field; identifies the window period)
+5. `window_start` (proof_bundle field; unix timestamp, beginning of window)
+6. `window_end` (proof_bundle field; unix timestamp, end of window)
+7. `scope` (verifier-derived: `Poseidon(domain_tag, subject_id, epoch_id)`)
+8. `nullifier_hash` (proof_bundle field)
+9. `proof_version` (top-level submission field)
 
 ## Private Inputs (Witness)
 
@@ -75,7 +77,9 @@ Requirements:
 if !verify_signature(signature, posting_pubkey, canonical_body): reject("invalid_signature")
 if !validate_schema(bundle): reject("invalid_schema")
 if !supported_proof_version(proof_version): reject("unsupported_proof_version")
-authoritative_epoch_id = derive_epoch_id(subject_id, epoch_policy_context)
+authoritative_epoch_id = derive_epoch_id(subject_id, time_window_id)
+# epoch_id is derived from time_window_id + subject_id (not client-submitted);
+# this is an early cheap check before expensive ZK verification
 if epoch_id != authoritative_epoch_id: reject("invalid_epoch_context")
 if !root_active(subject_id, cohort_root_hash): reject("inactive_root")
 if server_k_size(cohort_root_hash) < k_min: reject("insufficient_anonymity_set")

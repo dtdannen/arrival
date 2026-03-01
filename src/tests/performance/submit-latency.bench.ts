@@ -1,10 +1,7 @@
-import { describe, it } from 'vitest'
-
-// These will be converted to bench() calls when implemented.
-// Run with: npm run test:perf (vitest bench)
+import { describe, bench } from 'vitest'
 
 describe('Performance — Submit Latency', () => {
-  it.todo('T-1800: Submit latency p50 within target')
+  bench.todo('P-100: End-to-end submit latency p50 under target')
 
-  it.todo('T-1801: Submit latency p95 within target')
+  bench.todo('P-101: End-to-end submit latency p95 under target')
 })

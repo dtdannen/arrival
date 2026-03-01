@@ -123,10 +123,14 @@ Steps are ordered cheapest-first. Each step maps to exactly one reject code (see
    - `subject_id`, `epoch_id`, `nullifier_hash`, `first_seen_at`
 4. `receipts` table (optional cache)
    - `receipt_id`, `issuer_id`, `status`, `verified_at`
+5. `spent_receipts` table
+   - `receipt_hash` (primary key, `Hash(r)` from interaction receipt)
+   - `first_seen_at`
+   - one-receipt-one-review enforcement: checked at admission, inserted on admit (see `12-receipt-spec.md`)
 
 ## Operational Defaults
 
 1. Root refresh: daily or on significant WoT graph changes
-2. Epoch size: weekly
+2. Epoch/window size: adaptive per subject volume (weekly / biweekly / monthly / quarterly per `11-time-window-policy.md`)
 3. Review publish delay: bucketed to reduce timing linkage
 4. Logs: privacy-minimized by default
