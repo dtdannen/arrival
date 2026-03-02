@@ -63,6 +63,8 @@ After each implementation step, the `arrival-guardian` agent reviews work agains
 
 The frozen spec lives in `mvp/`. Do not modify spec files. Build to spec.
 
+**`mvp/INCONSISTENCIES.md`** documents 25 resolved spec inconsistencies with full decision rationale. When you need to understand *why* the spec says what it says — why the nullifier uses scope packing, why `interaction_proof` is raw RSA not ZK, why `created_at` is internal-only, why the pipeline has exactly 10 steps — the answer is in INCONSISTENCIES.md. Read the relevant issue before making design decisions that touch that area.
+
 The build guide is `src/README.md`. The test spec is `src/TESTS.md`.
 
 ## Code Organization
