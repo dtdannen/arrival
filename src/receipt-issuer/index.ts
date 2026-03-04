@@ -4,12 +4,95 @@
  * Spec: 12-receipt-spec.md (Issuance Flow, Keyset Rotation and Temporal Binding)
  *
  * Responsibilities:
+ * - Blind-sign interaction receipts via RSABSSA (RFC 9474)
  * - Manage per-subject keysets with temporal rotation
  * - Enforce non-overlapping keyset validity periods
  * - Maintain keyset registry (expired keysets remain for verification)
  */
 
+import { RSABSSA } from '@cloudflare/blindrsa-ts'
 import type { KeysetRecord } from '../shared/types.js'
+
+// ── RSABSSA suite ────────────────────────────────────────────────────
+
+/** RFC 9474 RSABSSA-SHA384-PSS-Randomized — the standard suite for blind RSA. */
+const suite = RSABSSA.SHA384.PSS.Randomized()
+
+// ── Key generation ───────────────────────────────────────────────────
+
+/**
+ * Generate an RSA key pair for blind signing.
+ * Per 12-receipt-spec.md: issuer maintains RSA keys per subject keyset.
+ */
+export async function generateIssuerKeyPair(
+  modulusLength = 2048,
+): Promise<CryptoKeyPair> {
+  return suite.generateKey({
+    modulusLength,
+    publicExponent: new Uint8Array([1, 0, 1]),
+  })
+}
+
+// ── Blind signing (issuer endpoint) ──────────────────────────────────
+
+/**
+ * Sign a blinded value B, returning S_blind.
+ *
+ * Per 12-receipt-spec.md Issuance Flow step 5:
+ * "Issuer validates context, signs with the active keyset:
+ *  S_blind = Sign(sk, B)"
+ *
+ * The issuer never sees the original value r — only the blinded B.
+ */
+export async function blindSign(
+  privateKey: CryptoKey,
+  blindedMsg: Uint8Array,
+): Promise<Uint8Array> {
+  return suite.blindSign(privateKey, blindedMsg)
+}
+
+// ── Client-side helpers (used by proof-engine) ──────────────────────
+
+/**
+ * Client blinds a message before sending to issuer.
+ * Per 12-receipt-spec.md Issuance Flow step 3:
+ * "Client blinds: B = Blind(pk, r)"
+ *
+ * Returns { blindedMsg, inv } where inv is needed for unblinding.
+ */
+export async function blindMessage(
+  publicKey: CryptoKey,
+  msg: Uint8Array,
+): Promise<{ blindedMsg: Uint8Array; inv: Uint8Array }> {
+  return suite.blind(publicKey, msg)
+}
+
+/**
+ * Client unblinds the issuer's blind signature to get the final signature.
+ * Per 12-receipt-spec.md Issuance Flow step 6:
+ * "Client unblinds: S = Unblind(pk, r, S_blind, inv)"
+ */
+export async function finalize(
+  publicKey: CryptoKey,
+  msg: Uint8Array,
+  blindSig: Uint8Array,
+  inv: Uint8Array,
+): Promise<Uint8Array> {
+  return suite.finalize(publicKey, msg, blindSig, inv)
+}
+
+/**
+ * Verify an unblinded signature.
+ * Per 12-receipt-spec.md Verification step 2:
+ * "Verify(pk, r, S) succeeds"
+ */
+export async function verifySignature(
+  publicKey: CryptoKey,
+  signature: Uint8Array,
+  message: Uint8Array,
+): Promise<boolean> {
+  return suite.verify(publicKey, signature, message)
+}
 
 // ── Keyset registry ─────────────────────────────────────────────────
 
