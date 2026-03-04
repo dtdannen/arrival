@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { deterministicSchnorrKeypair, sha256Hex } from '../../helpers/crypto.js'
 import { schnorr } from '@noble/curves/secp256k1'
-import { sha256 } from '@noble/hashes/sha256'
-import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils'
+import { bytesToHex } from '@noble/hashes/utils'
 
 /**
  * WoT Indexer — Event Ingestion
@@ -50,15 +49,15 @@ function createSignedEvent(
 ): NostrEvent {
   const partial = { pubkey, created_at, kind, tags, content }
   const id = computeEventId(partial)
-  const idBytes = utf8ToBytes(id)
-  const sig = bytesToHex(schnorr.sign(sha256(idBytes), secretKey))
+  // NIP-01: sign the 32-byte event id directly (noble-curves accepts hex strings)
+  const sig = bytesToHex(schnorr.sign(id, secretKey))
   return { id, ...partial, sig }
 }
 
 function verifyEventSignature(event: NostrEvent): boolean {
   try {
-    const idBytes = utf8ToBytes(event.id)
-    return schnorr.verify(event.sig, sha256(idBytes), event.pubkey)
+    // NIP-01: verify against the 32-byte event id (noble-curves accepts hex strings)
+    return schnorr.verify(event.sig, event.id, event.pubkey)
   } catch {
     return false
   }
