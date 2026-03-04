@@ -11,8 +11,7 @@
  */
 
 import { schnorr } from '@noble/curves/secp256k1'
-import { sha256 } from '@noble/hashes/sha256'
-import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils'
+import { bytesToHex } from '@noble/hashes/utils'
 import { sha256Hex } from '../shared/crypto.js'
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -54,10 +53,14 @@ export function computeEventId(event: Omit<NostrEvent, 'id' | 'sig'>): string {
 
 // ── Schnorr signature verification ──────────────────────────────────
 
+/**
+ * NIP-01 Schnorr signature verification.
+ * event.id is already sha256(serialized_event) as hex — pass directly to schnorr.verify
+ * which accepts hex strings. No re-hashing needed.
+ */
 export function verifyEventSignature(event: NostrEvent): boolean {
   try {
-    const idBytes = utf8ToBytes(event.id)
-    return schnorr.verify(event.sig, sha256(idBytes), event.pubkey)
+    return schnorr.verify(event.sig, event.id, event.pubkey)
   } catch {
     return false
   }
@@ -137,7 +140,6 @@ export function createSignedEvent(
 ): NostrEvent {
   const partial = { pubkey, created_at, kind, tags, content }
   const id = computeEventId(partial)
-  const idBytes = utf8ToBytes(id)
-  const sig = bytesToHex(schnorr.sign(sha256(idBytes), secretKey))
+  const sig = bytesToHex(schnorr.sign(id, secretKey))
   return { id, ...partial, sig }
 }
