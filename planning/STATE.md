@@ -1,8 +1,8 @@
 # Arrival — Project State
 
-**Last updated**: 2026-03-01
-**Current phase**: Step 0 — Infrastructure Setup
-**Active branch**: `main`
+**Last updated**: 2026-03-02
+**Current phase**: Step 0 — Infrastructure Setup (COMPLETE)
+**Active branch**: `step-0-infra` (ready for guardian review + merge)
 
 ## Completed
 
@@ -14,21 +14,18 @@
 - [x] Agent instructions written (`CLAUDE.md`)
 - [x] Guardian agent created (`.claude/agents/arrival-guardian.md`)
 - [x] All 10 unnamed decisions resolved and recorded
-
-## In Progress
-
-- [ ] Step 0: Infrastructure setup
-  - [ ] Extract `src/shared/types.ts` from test helpers (canonical types)
-  - [ ] Extract `src/shared/crypto.ts` from test helpers (canonical crypto)
-  - [ ] Create `src/shared/constants.ts` (k_min, t_min, reject codes, domain_tag)
-  - [ ] Create 10 component directories with empty `index.ts`
-  - [ ] PostgreSQL `docker-compose.yml` (PG container only)
-  - [ ] Database schema migrations (5 tables: roots, reviews, nullifiers, spent_receipts, issuer_registry)
-  - [ ] Wire up testcontainers in `src/tests/helpers/db.ts`
-  - [ ] Update test helpers to import from `src/shared/`
-  - [ ] Install `@cloudflare/blindrsa-ts`
-  - [ ] Create `circuits/` directory with gitignore for build artifacts
-  - [ ] Verify all 162 tests still pass after restructure
+- [x] Step 0: Infrastructure setup
+  - [x] Extract `src/shared/types.ts` from test helpers (canonical types)
+  - [x] Extract `src/shared/crypto.ts` from test helpers (canonical crypto)
+  - [x] Create `src/shared/constants.ts` (K_MIN, T_MIN, REJECT_CODES, SUPPORTED_PROOF_VERSIONS, DOMAIN_TAG, EPOCH_SEPARATOR)
+  - [x] Create 10 component directories with empty `index.ts`
+  - [x] PostgreSQL `docker-compose.yml` (PG container only)
+  - [x] Database schema migrations (5 tables: roots, reviews, nullifiers, spent_receipts, issuer_registry)
+  - [x] Wire up testcontainers in `src/tests/helpers/db.ts`
+  - [x] Update test helpers to import from `src/shared/`
+  - [x] Install `@cloudflare/blindrsa-ts`, `testcontainers`, `pg`
+  - [x] Create `circuits/` directory with gitignore for build artifacts
+  - [x] Verify all 162 tests still pass after restructure
 
 ## Up Next
 
@@ -47,7 +44,8 @@ None. All 10 previously unnamed decisions are resolved. See `planning/PROCESS.md
 
 ## Notes
 
-- 162 tests pass as of genesis. This is the baseline. Never let it regress.
+- 162 tests pass after Step 0 restructure. Baseline maintained.
 - Test inline implementations are reference code — don't move or modify them.
 - Steps 1 and 2 are the first parallelization opportunity (independent components).
 - RSABSSA library: `@cloudflare/blindrsa-ts` — only viable RFC 9474 TS implementation.
+- Shared code ownership: production owns `src/shared/`, test helpers re-export from there.
