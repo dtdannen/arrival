@@ -435,6 +435,10 @@ export function admitSubmission(
   if (!mp || typeof mp !== 'object' || !(mp as Record<string, unknown>).protocol) {
     return reject('invalid_membership_proof', 'Invalid membership proof')
   }
+  if (ctx.membershipVerifier) {
+    const step7 = verifyMembershipProof(mp, submission.proof_bundle.cohort_root_hash, ctx.membershipVerifier)
+    if (!step7.ok) return reject(step7.reject_code!, step7.reject_detail!)
+  }
   flags.membership_verified = true
 
   // Step 8: Interaction proof
@@ -442,6 +446,12 @@ export function admitSubmission(
   const keyset = ctx.keysetRegistry.getKeyset(ip.keyset_id, submission.subject_id)
   if (!keyset) {
     return reject('invalid_interaction_proof', 'Unknown keyset')
+  }
+  if (ctx.interactionVerifier) {
+    const sigValid = ctx.interactionVerifier.verifySignature(ip.r, ip.S, ip.keyset_id, submission.subject_id)
+    if (!sigValid) {
+      return reject('invalid_interaction_proof', 'RSA blind signature verification failed')
+    }
   }
   const receiptHash = sha256Hex(ip.r)
   if (ctx.spentReceipts.isSpent(receiptHash)) {
@@ -463,6 +473,12 @@ export function admitSubmission(
   const tp = submission.proof_bundle.timeblind_proof
   if (!tp || typeof tp !== 'object') {
     return reject('invalid_timeblind_proof', 'Invalid timeblind proof')
+  }
+  if (ctx.timeblindVerifier) {
+    const step9 = verifyTimeblind(tp, submission.proof_bundle.time_window_id,
+      submission.proof_bundle.window_start, submission.proof_bundle.window_end,
+      ctx.windowRegistry, ctx.timeblindVerifier)
+    if (!step9.ok) return reject(step9.reject_code!, step9.reject_detail!)
   }
   flags.timeblind_verified = true
 
