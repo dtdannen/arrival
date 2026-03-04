@@ -15,9 +15,8 @@ CREATE TABLE IF NOT EXISTS roots (
   created_at       BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW())::BIGINT)
 );
 
-CREATE INDEX IF NOT EXISTS idx_roots_subject_active
-  ON roots (subject_id, root_hash)
-  WHERE valid_to > EXTRACT(EPOCH FROM NOW());
+CREATE INDEX IF NOT EXISTS idx_roots_subject_lookup
+  ON roots (subject_id, root_hash, valid_from, valid_to);
 
 -- 2. reviews — admitted and published reviews
 -- status: 'admitted' (held, not visible) or 'published' (batch-released, visible)
