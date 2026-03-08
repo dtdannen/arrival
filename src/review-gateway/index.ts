@@ -27,6 +27,8 @@ import {
   sha256Hex,
   deriveEpochId,
 } from '../shared/crypto.js'
+import { verifyArtifacts, generatePinnedConfig } from './artifact-pinning.js'
+import type { ArtifactPinConfig } from './artifact-pinning.js'
 import { SUPPORTED_PROOF_VERSIONS, K_MIN } from '../shared/constants.js'
 import type {
   ReviewSubmission,
@@ -41,6 +43,7 @@ import type {
   InteractionProof,
   RejectCode,
 } from '../shared/types.js'
+import type { SafeLogger } from './logger.js'
 
 // ── Verifier interfaces ──────────────────────────────────────────────
 
@@ -78,6 +81,7 @@ export interface PipelineContext {
   membershipVerifier?: MembershipVerifier
   timeblindVerifier?: TimeblindVerifier
   interactionVerifier?: InteractionVerifier
+  logger?: SafeLogger
 }
 
 // ── Step 1: Ed25519 signature ────────────────────────────────────────
@@ -390,13 +394,15 @@ export function admitSubmission(
   }
 
   function reject(code: RejectCode, detail: string): VerificationResult {
-    return {
+    const result: VerificationResult = {
       status: 'rejected',
       reject_code: code,
       reject_detail: detail,
       held_reason: null,
       verified_flags: flags,
     }
+    ctx.logger?.logAdmission(submission, { status: 'rejected', reject_code: code })
+    return result
   }
 
   // Step 1: Signature
@@ -491,11 +497,30 @@ export function admitSubmission(
   ctx.spentReceipts.markSpent(receiptHash)
   flags.nullifier_unique = true
 
+  ctx.logger?.logAdmission(submission, { status: 'admitted' })
+
   return {
     status: 'admitted',
     reject_code: null,
     reject_detail: null,
     held_reason: 'window_open',
     verified_flags: flags,
+  }
+}
+
+// ── Gateway startup ─────────────────────────────────────────────────
+
+/**
+ * Verify circuit artifacts against pinned hashes at gateway startup.
+ * Fail closed on mismatch — per 06-trust-model.md Mitigation Control #4.
+ */
+export function verifyGatewayArtifacts(loadedArtifacts: ArtifactPinConfig): void {
+  const pinned = generatePinnedConfig()
+  const result = verifyArtifacts(pinned, loadedArtifacts)
+  if (!result.valid) {
+    const details = result.mismatches
+      .map((m) => `${m.artifact}: expected ${m.expected}, got ${m.actual}`)
+      .join('; ')
+    throw new Error(`Gateway startup blocked: artifact pin mismatch — ${details}`)
   }
 }
