@@ -33,22 +33,52 @@ This is the key UX innovation. Every reviewer appears under a different generate
 - You see a reviewer as `amber-spoon-3`
 - Your friend sees the same reviewer as `copper-sage-11`
 - The handles are deterministic per viewer-reviewer pair (stable across sessions)
-- Two viewers can never compare notes to correlate identities
-- Derived from a hash of the reviewer's nullifier seed and the viewer's public key
+- Derived from a hash of the reviewer's rotating pseudonym seed and the viewer's public key
+
+**Honest limitations:** Per-viewer handles make *casual* comparison harder, but don't prevent deliberate correlation. Review content is identical across viewers — two people can compare the text of a review and ask each other "what handle do you see on this one?" to link handles. Handle rotation (see below) is the primary mitigation: by the time someone tries to correlate, the handles have changed.
 
 This gives users:
-- **Continuity** — the same handle always means the same person (for you)
+- **Continuity** — the same handle means the same person (for you), until they rotate
 - **Followability** — you can follow `amber-spoon-3` because you like their taste
 - **Mutability** — you can mute a reviewer you disagree with
-- **Zero cross-viewer correlation** — handles are meaningless outside your personal view
-- **Full anonymity from friends** — even friends who invited you can't identify your reviews
+- **Partial cross-viewer resistance** — handles differ across viewers, raising the effort to correlate
+- **Strong anonymity from friends** — friends who invited you can't trivially identify your reviews, especially with regular rotation
 
 ### Handle Generation
 
 Handles are auto-generated, fun, and throwaway-feeling:
 - Format: `adjective-noun-number` (e.g., `quiet-fork-7`, `salt-lamp-22`, `iron-basil-9`)
 - No sign-up form, no "pick a username"
-- Users can regenerate their underlying identity anytime (fresh start, new handles for everyone)
+
+### Handle Rotation
+
+Handle rotation is a core privacy mechanism, not just a feature.
+
+**How it works:**
+- Each user has a pseudonym seed (separate from their Nostr keypair)
+- Per-viewer handles are derived from: `hash(pseudonym_seed + viewer_pubkey)`
+- When you rotate, you generate a new pseudonym seed
+- All your handles change for all viewers simultaneously
+- Your Nostr keypair and follow graph stay the same — nobody loses a follow
+
+**What rotation looks like from a viewer's perspective:**
+- `amber-spoon-3` disappears from your feed
+- `midnight-salt-7` appears, already followed (because the underlying follow persists)
+- You can't tell which old handle maps to which new handle
+- Especially if multiple people you follow rotated around the same time
+
+**Rotation as culture:**
+- Default: handles auto-rotate every 2 weeks (configurable)
+- Manual rotation available anytime ("fresh start" button)
+- When many users rotate on similar schedules, correlation attempts drown in noise
+- Past reviews stay under old (now-dead) handles — no new reviews appear under them
+- This de-correlates review history: your past reviews can't be linked to future reviews
+
+**Why this matters:**
+- Single biggest mitigation against content-based correlation attacks
+- Even if someone links your handles at one point in time, the link expires at next rotation
+- Network-wide rotation creates a constantly shifting pseudonym landscape
+- The follow graph is stable underneath — social connections persist, only surface labels change
 
 ## Trust Network
 
@@ -56,7 +86,7 @@ Handles are auto-generated, fun, and throwaway-feeling:
 
 The WoT is built through social actions, not pre-existing Nostr relationships:
 
-- **Invite codes**: Share a code with a friend. They sign up, you're automatically in each other's follow list. Neither knows the other's reviewer pseudonym.
+- **Invite codes**: Share a code with a friend. They sign up, you're automatically in each other's follow list. They'll see your reviews under a handle unique to them, but if you're the only person they've invited, they can infer it's you. This weakens with scale — once they've invited several people and others have rotated handles, the mapping becomes ambiguous.
 - **Organic follows**: Browse reviews, find someone whose taste you like, follow them. They appear under your personal handle for them.
 - **Trust distance**: Reviews are labeled by network distance — 1st degree (direct follow), 2nd degree (friend of friend), 3rd degree.
 
@@ -193,5 +223,6 @@ The proof-of-interaction system (blind signatures, receipt verification) is buil
 - How much of the ZK pipeline is active in v1 vs deferred?
 - Per-viewer pseudonym derivation — exact cryptographic construction?
 - Handle word lists — how to make them fun and culturally neutral?
-- Regeneration flow — what happens to your followers when you reset identity?
 - Moderation — how do you handle spam/abuse when reviewers are anonymous?
+- Rotation cadence — is 2 weeks the right default? Should it be synchronized (everyone rotates on the same day) or staggered?
+- What does the UI look like when a followed reviewer rotates? Silent transition or notification?
