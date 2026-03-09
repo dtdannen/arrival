@@ -35,6 +35,20 @@ This is the key UX innovation. Every reviewer appears under a different generate
 - The handles are deterministic per viewer-reviewer pair (stable across sessions)
 - Derived from a hash of the reviewer's rotating pseudonym seed and the viewer's public key
 
+#### Pseudonym Seed Distribution (ECDH)
+
+The pseudonym seed must reach each viewer's client without the server/relay learning it. We use ECDH key exchange over the existing Nostr keypairs (NIP-44 already does this):
+
+**Mutual follows (invite codes):** Both parties have each other's pubkeys. Reviewer encrypts pseudonym seed to the ECDH shared secret, sends via NIP-44 encrypted message. Viewer derives handle locally. Server never sees the seed.
+
+**Organic follows:** Reviewer has a follow-acceptance toggle:
+- **Open (default):** Reviewer's client subscribes to new follow events. When a new follower appears, client auto-runs ECDH, encrypts current pseudonym seed, publishes encrypted NIP-44 DM to the new follower. Viewer's client picks it up and derives handle.
+- **Approval required:** Same flow, but queued until reviewer approves the follow request.
+
+**Offline handling:** Nostr events persist on relays. Reviewer's client doesn't need to be online when the follow happens — next time they open the app, they pull pending follows, process them, and publish encrypted seeds. Viewer gets the seed whenever they come online next.
+
+**On rotation:** Reviewer's client re-encrypts the new pseudonym seed to every follower's shared secret and publishes O(followers) NIP-44 messages. Fine at normal scale; may need batching or fan-out relay support at 10k+ followers.
+
 **Honest limitations:** Per-viewer handles make *casual* comparison harder, but don't prevent deliberate correlation. Review content is identical across viewers — two people can compare the text of a review and ask each other "what handle do you see on this one?" to link handles. Handle rotation (see below) is the primary mitigation: by the time someone tries to correlate, the handles have changed.
 
 This gives users:
@@ -92,16 +106,24 @@ The WoT is built through social actions, not pre-existing Nostr relationships:
 
 ### Sharing Reviewers
 
-You can recommend a reviewer to a friend without breaking anonymity:
+You can recommend a reviewer to a friend without breaking anonymity.
 
+**Case 1 — Friend is already in your WoT (common case):**
 1. Tap share on `amber-spoon-3`'s profile
-2. App generates a one-time invite code (e.g., `arrival.app/follow/x8k2mz`)
-3. Send it to your friend via text, airdrop, whatever
-4. Friend opens it, app resolves the token server-side, generates a new handle for their view
-5. They now follow the same reviewer as `copper-sage-11`
-6. The token is single-use and gets burned — can't be replayed for correlation
+2. App sends an encrypted NIP-44 DM to your friend containing the reviewer's pubkey
+3. Friend's client receives it, follows the reviewer, normal ECDH seed exchange happens
+4. They now see the reviewer under their own unique handle
+5. Relay delivers encrypted messages but can't read them — no server-side mapping needed
 
-The code doesn't contain any handle or npub. It's a server-side lookup that bridges the social action without leaking identity.
+**Case 2 — Sharing via external link (text, airdrop, etc.):**
+1. Tap share, app generates a link like `arrival.app/follow/x8k2mz#<encryption_key>`
+2. Client encrypts `{reviewer_pubkey}` with an ephemeral key, publishes encrypted blob to relay tagged with token ID
+3. The `#fragment` (encryption key) is never sent to any server — browsers strip it
+4. Recipient opens link, client fetches encrypted blob by token ID, decrypts with key from fragment
+5. Recipient now has reviewer's pubkey, follows them, normal ECDH seed exchange kicks in
+6. Blob is burned after first retrieval
+
+**Status:** Case 1 is straightforward and covers the primary use case. Case 2 uses the "key in fragment" pattern (Firefox Send, Bitwarden Send) and is more engineering work — may defer to post-v1.
 
 ## Review UX
 
@@ -148,16 +170,26 @@ PWA first. Mobile-native UX without app store gatekeeping.
 - Full screen mode
 - When ready, wrap in Capacitor for native app store distribution
 
+### Architecture Model
+
+Nostr is not peer-to-peer — relays are servers. All communication in Arrival happens over Nostr relays.
+
+On top of that, we add DVMs (Data Vending Machines) — centralized backend services that speak Nostr protocol instead of HTTP. These handle operations that can't be done client-side: the verification pipeline, WoT indexing, cohort management, batch release timing.
+
+The entire stack — client, DVMs, relay configuration — is open source. Anyone can clone the repo, run their own DVMs, point at their own relays, and have a fully independent instance. The protocol doesn't hard-code a specific operator.
+
+Ideally we wouldn't need DVMs at all, but some operations require centralized coordination. ZK proofs limit what the DVM operator can learn, but they don't eliminate the need for an operator.
+
 ### Stack
 
 - TypeScript frontend (React or Svelte — TBD)
 - Service worker for offline/caching
 - Web app manifest for install-to-home-screen
-- Existing backend services behind API:
+- Backend services implemented as DVMs (Nostr-native):
   - WoT indexer (follow graph)
   - Review gateway (verification pipeline)
   - Review feed API (batch release, serving)
-  - Proof engine (client-side ZK proving)
+  - Proof engine (client-side, not a DVM)
 
 ### What Existing Backend Supports
 
@@ -215,14 +247,59 @@ The proof-of-interaction system (blind signatures, receipt verification) is buil
 5. **Trust through taste.** You follow people because you agree with their reviews, not because you know who they are.
 6. **Complexity is hidden.** ZK proofs, Merkle trees, batch release — users see "reviews from your network."
 
+## Design Review Notes
+
+Issues identified during design review, with current status.
+
+### Resolved
+
+**Pseudonym seed distribution:** ECDH over Nostr keypairs (NIP-44). Reviewer encrypts seed to each follower's shared secret. See "Pseudonym Seed Distribution" section above.
+
+**Architecture model:** Not P2P. Nostr relays as transport, DVMs for centralized backend services, all open source. See "Architecture Model" section above.
+
+**Reviewer sharing without server mapping:** Case 1 (in-WoT) via encrypted DM. Case 2 (external link) via key-in-fragment pattern. See "Sharing Reviewers" section above.
+
+**Follow acceptance:** Toggle for open follows (auto-accept + auto ECDH) vs approval-required. See "Pseudonym Seed Distribution" section above.
+
+### Needs Design Work
+
+**Handle rotation state management:**
+- Viewer's client must map `[old_handle_1, old_handle_2, ..., current_handle]` to the same underlying follow. Otherwise old reviews from rotated handles lose their "in your network" label.
+- Follows must be stored by stable identifier (the ECDH shared secret or the reviewer's pubkey, held locally), not by handle.
+- On rotation, reviewer sends new encrypted seed — the viewer's client links old and new handles locally. No server involved.
+- Batch vs staggered rotation timing: staggered is better for UX (not everything changes at once), synchronized is better for privacy (harder to correlate). Needs a decision.
+
+**v1 verification pipeline — which ZK steps are active?**
+- Full ZK pipeline (membership proof, TimeBlind, nullifier) requires client-side WASM proving — the biggest performance bottleneck.
+- Option: simplified v1 pipeline where the DVM verifies WoT membership directly (it runs the indexer, it knows the graph), batch release handles timing privacy, and basic nullifier dedup prevents spam. Save full ZK for when we need to minimize DVM trust.
+- Decision needed: which of the 10 pipeline steps are active in v1?
+
+**Identity storage and recovery:**
+- Keypair stored where? LocalStorage/IndexedDB cleared by "clear browsing data."
+- Loss of keypair = lost follow graph, lost review history linkage, lost pseudonym seed.
+- Options: seed phrase backup, encrypted backup to relay, or accept ephemeral nature.
+- Decision needed before v1 ship.
+
+**Restaurant data source:**
+- Recommendation: Overture Maps (open, free, good city coverage) + user-submitted corrections. Avoids Google Places ToS and cost issues.
+- Sub-decision: map-based search or text-only? Map adds significant complexity.
+
+**Moderation:**
+- WoT-gated posting is the natural defense (only users within trust distance can review).
+- Rate limiting via nullifier epoch (one review per restaurant per time window) already built.
+- Open question: who adjudicates flagged reviews when reviewers are anonymous?
+
+**Photo support:**
+- Photos are the #1 correlation risk: EXIF data, visual fingerprinting, unique content.
+- If supported, needs aggressive metadata stripping at minimum.
+- Consider photo-less v1.
+
 ## Open Questions
 
 - What does the review compose screen look like?
 - How does restaurant search work? (by name, location, cuisine, map?)
 - Feed design — chronological, by restaurant, by reviewer, algorithmic?
-- How much of the ZK pipeline is active in v1 vs deferred?
-- Per-viewer pseudonym derivation — exact cryptographic construction?
 - Handle word lists — how to make them fun and culturally neutral?
-- Moderation — how do you handle spam/abuse when reviewers are anonymous?
-- Rotation cadence — is 2 weeks the right default? Should it be synchronized (everyone rotates on the same day) or staggered?
+- Rotation cadence — is 2 weeks the right default?
 - What does the UI look like when a followed reviewer rotates? Silent transition or notification?
+- Should all reviews be visible by default (unfiltered) with WoT as opt-in layer? (Helps solo-use value prop.)
